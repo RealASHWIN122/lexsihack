@@ -1,0 +1,11 @@
+
+name: custom_capitals
+source:
+  type: csv
+  path: custom_tasks_demo/capitals.csv
+schema:
+  prompt: question
+  answer: answer
+  corrupted_prompt: counterfactual
+  corrupted_answer: wrong_answer
+metric: logit_diff

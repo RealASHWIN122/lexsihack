@@ -1,0 +1,5 @@
+question,answer,counterfactual,wrong_answer
+"The capital of France is"," Paris","The capital of Italy is"," Rome"
+"The capital of Spain is"," Madrid","The capital of Germany is"," Berlin"
+"The capital of Japan is"," Tokyo","The capital of China is"," Beijing"
+"The capital of UK is"," London","The capital of Egypt is"," Cairo"

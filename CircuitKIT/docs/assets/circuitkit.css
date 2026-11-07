@@ -1,0 +1,434 @@
+/* ============================================================================
+   CircuitKIT — design system
+   Direction: minimal, technical, black and orange. Lexsi ink for the chrome,
+   a warm paper for the page, and the Lexsi orange (#FF4B0A) as the one accent.
+   Colours are the tokens lexsi.ai publishes (--orange--orange-*, --neutral--*).
+   Type: Bricolage Grotesque (display) · Schibsted Grotesk (text, via theme)
+         · IBM Plex Mono (code, via theme)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&display=swap');
+
+:root {
+  /* Lexsi brand tokens (from lexsi.ai) */
+  --lx-orange-400: #ff692e;
+  --lx-orange-500: #ff4b0a; /* the Lexsi orange */
+  --lx-orange-600: #e62e05;
+  --lx-orange-700: #bc1b06;
+  --lx-ink: #07080a; /* neutral-900 */
+  --lx-ink-2: #2c2c2c; /* neutral-800 */
+  --lx-ink-3: #404040; /* neutral-700 */
+  --lx-milk: #f4f3ec; /* milk-white */
+
+  --ck-ink: var(--lx-ink);
+  --ck-ink-2: var(--lx-ink-2);
+  --ck-accent: var(--lx-orange-500);
+  --ck-accent-dim: rgba(255, 75, 10, 0.12);
+  /* Link text: #FF4B0A is 3.0-3.4:1 on a light page and orange-600 (#e62e05) is 4.2:1,
+     both under the 4.5:1 that WCAG AA asks for body text. Light mode links therefore use
+     #d42905, orange-600 darkened a few percent (4.9:1 on the page), and darken again on
+     hover (orange-700, 6.1:1). Dark mode keeps the exact brand orange (5.8:1) and
+     lightens on hover. */
+  --ck-accent-link: #d42905;
+  --ck-accent-hover: var(--lx-orange-700);
+  --ck-paper: #fbfaf7;
+  --ck-display: "Bricolage Grotesque", "Schibsted Grotesk", sans-serif;
+}
+
+/* ── Palette: light ─────────────────────────────────────────────────────── */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--ck-ink);
+  --md-primary-fg-color--light: var(--lx-ink-3);
+  --md-primary-fg-color--dark: #000;
+  --md-accent-fg-color: var(--ck-accent-hover);
+  --md-typeset-a-color: var(--ck-accent-link);
+  --md-default-bg-color: var(--ck-paper);
+  --md-code-bg-color: var(--lx-milk);
+  --md-footer-bg-color: var(--ck-ink);
+  --md-footer-bg-color--dark: #000;
+}
+
+/* ── Palette: dark ────────────────────────────────────────────────────────── */
+/* Material's slate scheme derives every grey from a blue hue; set neutral ones
+   so the dark theme is black, not navy. */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--ck-ink);
+  --md-primary-fg-color--light: var(--lx-ink-3);
+  --md-primary-fg-color--dark: #000;
+  --md-accent-fg-color: var(--lx-orange-400);
+  --md-typeset-a-color: var(--ck-accent);
+  --md-default-bg-color: #0c0d0f;
+  --md-default-bg-color--light: rgba(12, 13, 15, 0.54);
+  --md-default-bg-color--lighter: rgba(12, 13, 15, 0.26);
+  --md-default-bg-color--lightest: rgba(12, 13, 15, 0.07);
+  --md-default-fg-color: rgba(255, 255, 255, 0.9);
+  --md-default-fg-color--light: rgba(255, 255, 255, 0.62);
+  --md-default-fg-color--lighter: rgba(255, 255, 255, 0.34);
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.1);
+  --md-typeset-color: var(--md-default-fg-color);
+  --md-code-fg-color: #e8e6e1;
+  --md-code-bg-color: #15161a;
+  --md-typeset-table-color: rgba(255, 255, 255, 0.1);
+  --md-typeset-table-color--light: rgba(255, 255, 255, 0.03);
+  --md-typeset-kbd-color: rgba(255, 255, 255, 0.1);
+  --md-typeset-kbd-accent-color: rgba(255, 255, 255, 0.18);
+  --md-typeset-kbd-border-color: #000;
+  --md-footer-bg-color: var(--ck-ink);
+  --md-footer-bg-color--dark: #000;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ck-accent) 28%, transparent);
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  font-family: var(--ck-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-weight: 700;
+}
+
+.md-header__topic,
+.md-tabs__link {
+  font-family: var(--ck-display);
+  font-weight: 600;
+}
+
+/* ── Header & tabs ──────────────────────────────────────────────────────── */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: auto;
+  filter: drop-shadow(0 0 4px rgba(255, 75, 10, 0.15));
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-header__title {
+  font-size: 0.95rem;
+}
+
+.md-tabs__link {
+  opacity: 0.75;
+  transition: color 125ms, opacity 125ms;
+}
+
+.md-tabs__link:hover {
+  color: var(--ck-accent);
+  opacity: 1;
+}
+
+.md-tabs__link--active {
+  color: var(--ck-accent);
+  opacity: 1;
+  box-shadow: 0 2px 0 0 var(--ck-accent);
+}
+
+.md-search__form {
+  border-radius: 0.3rem;
+}
+
+/* ── Landing hero ───────────────────────────────────────────────────────── */
+.ck-hero {
+  position: relative;
+  text-align: center;
+  padding: 3.2rem 1rem 2.6rem;
+  margin: 0 0 1.6rem;
+  overflow: hidden;
+}
+
+.ck-hero > * {
+  position: relative;
+}
+
+.ck-hero img.ck-hero-mark {
+  position: relative;
+  width: 8rem;
+  height: auto;
+  margin-bottom: 0.8rem;
+  z-index: 1;
+}
+
+/* ── Animated badge (pulsing glow behind logo) ──────────────────────────── */
+.ck-hero-mark::before {
+  display: none;
+}
+
+.ck-hero .ck-hero-logo-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.8rem;
+}
+
+/* ── Landing hero: layered-circuit animation ────────────────────────────── */
+.ck-hero .ck-hero-anim {
+  width: min(340px, 74vw);
+  margin: 0 auto;
+  line-height: 0;
+}
+
+.ck-hero .ck-hero-anim svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+[data-md-color-scheme="default"] {
+  --ck-anim-edge: rgba(7, 8, 10, 0.13);
+  --ck-anim-node: rgba(7, 8, 10, 0.42);
+  --ck-anim-glow: rgba(255, 75, 10, 0.30);
+}
+
+[data-md-color-scheme="slate"] {
+  --ck-anim-edge: rgba(255, 255, 255, 0.14);
+  --ck-anim-node: rgba(255, 255, 255, 0.5);
+  --ck-anim-glow: rgba(255, 75, 10, 0.55);
+}
+
+.ck-hero-anim .ck-edge {
+  fill: none;
+  stroke: var(--ck-anim-edge);
+  stroke-width: 1.8;
+  transition: stroke 0.55s ease, filter 0.55s ease;
+}
+
+.ck-hero-anim .ck-edge.is-on {
+  stroke: var(--ck-accent);
+  filter: drop-shadow(0 0 3px var(--ck-anim-glow));
+}
+
+.ck-hero-anim .ck-node {
+  fill: var(--ck-anim-node);
+  transition: fill 0.55s ease, filter 0.55s ease;
+}
+
+.ck-hero-anim .ck-node.is-on {
+  fill: var(--ck-accent);
+  filter: drop-shadow(0 0 5px var(--ck-anim-glow));
+}
+
+.ck-hero-anim .ck-pulse {
+  fill: var(--ck-accent);
+  filter: drop-shadow(0 0 5px var(--ck-anim-glow));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-hero-anim .ck-edge,
+  .ck-hero-anim .ck-node {
+    transition: none;
+  }
+}
+
+.ck-hero h1.ck-hero-title {
+  font-family: var(--ck-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0.2rem auto 0.7rem;
+  max-width: 34rem;
+}
+
+.ck-hero h1.ck-hero-title em {
+  font-style: normal;
+  color: var(--ck-accent);
+}
+
+.ck-hero p.ck-tagline {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 36rem;
+  margin: 0 auto 1.5rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.ck-hero .md-button {
+  margin: 0.2rem 0.3rem;
+}
+
+.ck-chips {
+  margin-top: 1.1rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--md-default-fg-color--light);
+}
+
+.ck-chips span {
+  display: inline-block;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 1rem;
+  padding: 0.15rem 0.65rem;
+  margin: 0.15rem 0.15rem;
+  background: var(--md-default-bg-color);
+}
+
+.ck-hero .md-button--primary {
+  background-color: var(--ck-accent);
+  border-color: var(--ck-accent);
+  color: #fff;
+  transition: background-color 125ms, border-color 125ms, transform 125ms;
+}
+
+.ck-hero .md-button--primary:hover {
+  background-color: var(--lx-orange-600);
+  border-color: var(--lx-orange-600);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+[data-md-color-scheme="slate"] .ck-hero .md-button:not(.md-button--primary) {
+  color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] .ck-hero .md-button:not(.md-button--primary):hover {
+  color: var(--ck-accent);
+  border-color: var(--ck-accent);
+  background-color: transparent;
+}
+
+/* ── Mermaid: brand palette ─────────────────────────────────────────────── */
+:root,
+[data-md-color-scheme="default"] {
+  --md-mermaid-node-bg-color: color-mix(in srgb, var(--ck-accent) 9%, #ffffff);
+  --md-mermaid-node-fg-color: var(--ck-ink);
+  --md-mermaid-edge-color: var(--lx-ink-3);
+  --md-mermaid-label-bg-color: var(--ck-paper);
+  --md-mermaid-label-fg-color: var(--ck-ink);
+  --md-mermaid-font-family: var(--md-text-font-family);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-mermaid-node-bg-color: #1c1d21;
+  --md-mermaid-node-fg-color: #ece9e4;
+  --md-mermaid-edge-color: #8a8782;
+  --md-mermaid-label-bg-color: #0c0d0f;
+  --md-mermaid-label-fg-color: #ece9e4;
+}
+
+/* ── Full-width tables ──────────────────────────────────────────────────── */
+.ck-wide table {
+  width: 100%;
+  display: table;
+}
+
+/* staggered load reveal */
+@media (prefers-reduced-motion: no-preference) {
+  .ck-hero > * {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: ck-rise 480ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards;
+  }
+  .ck-hero > *:nth-child(1) { animation-delay: 60ms; }
+  .ck-hero > *:nth-child(2) { animation-delay: 140ms; }
+  .ck-hero > *:nth-child(3) { animation-delay: 220ms; }
+  .ck-hero > *:nth-child(4) { animation-delay: 300ms; }
+  .ck-hero > *:nth-child(5) { animation-delay: 380ms; }
+}
+
+@keyframes ck-rise {
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Grid cards refinement ──────────────────────────────────────────────── */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.35rem;
+  border-color: var(--md-default-fg-color--lightest);
+  transition: border-color 125ms, box-shadow 125ms, transform 125ms;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-top: 2px solid var(--ck-accent);
+  box-shadow: 0 6px 18px rgba(7, 8, 10, 0.08);
+  transform: translateY(-2px);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.md-typeset .grid.cards > ul > li .twemoji.lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: var(--ck-accent-dim);
+  vertical-align: middle;
+}
+
+.md-typeset .grid.cards > ul > li .twemoji svg {
+  color: var(--ck-accent);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li .twemoji.lg {
+  background: color-mix(in srgb, var(--ck-accent) 16%, transparent);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li .twemoji svg {
+  color: var(--ck-accent);
+}
+
+/* ── Content details ────────────────────────────────────────────────────── */
+.md-typeset table:not([class]) th {
+  font-family: var(--ck-display);
+  font-weight: 600;
+  background-color: transparent;
+  border-bottom: 2px solid var(--ck-accent);
+}
+
+.md-typeset code {
+  border-radius: 0.18rem;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-left-color: var(--ck-accent);
+}
+
+/* Admonitions: the informational types (Material colours them blue, teal and
+   violet) take the brand orange so the page carries one accent. Success,
+   warning, failure, danger, question and quote keep their semantic colours. */
+.md-typeset .admonition:is(.note, .abstract, .summary, .tldr, .info, .todo, .tip, .hint, .important, .example),
+.md-typeset details:is(.note, .abstract, .summary, .tldr, .info, .todo, .tip, .hint, .important, .example) {
+  border-color: var(--ck-accent);
+}
+
+.md-typeset :is(.note, .abstract, .summary, .tldr, .info, .todo, .tip, .hint, .important, .example) > :is(.admonition-title, summary) {
+  background-color: var(--ck-accent-dim);
+}
+
+.md-typeset :is(.note, .abstract, .summary, .tldr, .info, .todo, .tip, .hint, .important, .example) > :is(.admonition-title, summary)::before {
+  background-color: var(--ck-accent);
+}
+
+.md-footer-social__link:hover svg {
+  fill: var(--ck-accent);
+}
+
+/* ── Lexsi footer block ─────────────────────────────────────────────────── */
+.ck-lexsi-footer {
+  text-align: center;
+  margin: 2.4rem 0 0.8rem;
+}
+
+.ck-lexsi-footer p {
+  margin: 0.25rem 0;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.74rem;
+}
+
+.ck-lexsi-on-dark { display: none; }
+[data-md-color-scheme="slate"] .ck-lexsi-on-light { display: none; }
+[data-md-color-scheme="slate"] .ck-lexsi-on-dark { display: inline; }

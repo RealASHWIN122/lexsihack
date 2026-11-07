@@ -1,0 +1,39 @@
+<!-- circuitkit-logo -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../../docs/assets/circuitkit-logo-white.png">
+    <img src="../../../../docs/assets/circuitkit-logo-black.png" width="200" alt="CircuitKIT">
+  </picture>
+</p>
+
+# cdt
+
+Backend for CD-T (Contextual Decomposition for Transformers), a gradient-free
+forward-pass method that attributes predictions to source nodes by propagating a
+`(rel, irrel)` split through every transformer component.
+
+## Key modules
+
+- `propagation.py` — `cd_propagate_tl` (and helpers): full CD-T propagation over a
+  TransformerLens model using TL's unified weight API, so it works across GPT-2,
+  GPT-J, Llama 1/2/3, Mistral, Gemma, Qwen2, Falcon, Pythia, etc.
+- `adapter.py` — `run_cdt_discovery`: runs the CD-T importance metric on the
+  TL checkpoint already loaded by `discover_circuit` (full-propagation by default,
+  with a simplified TL-cache fallback).
+
+## Subpackages
+
+- `pyfunctions/` — the vendored CD-T reference implementation (BERT/GPT wrappers,
+  core decomposition ops, ablation and source→target routines).
+
+## Public API / entry points
+
+`__init__.py` re-exports the raw `pyfunctions` modules `core`, `basic`, `wrappers`
+(via `__all__`) for direct use outside the pipeline.
+
+## How it fits
+
+Dispatched from `api.discover_circuit` (`cdt`, stable tier) via
+`adapter.run_cdt_discovery`. Note: clean-only. RoPE handling and the gated-MLP
+split are approximations, so scores on RoPE models are approximate (see registry
+comment in `backends/__init__.py`).

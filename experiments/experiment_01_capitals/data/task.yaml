@@ -1,0 +1,10 @@
+metric: logit_diff
+name: custom_capitals_test
+schema:
+  answer: clean_answer
+  corrupted_answer: corrupted_answer
+  corrupted_prompt: corrupted_prompt
+  prompt: clean_prompt
+source:
+  path: my_custom_task/data.csv
+  type: csv

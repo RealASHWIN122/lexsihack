@@ -1,0 +1,1318 @@
+<!-- circuitkit-logo -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Lexsi-Labs/CircuitKIT/main/docs/assets/circuitkit-logo-white.png">
+    <img src="https://raw.githubusercontent.com/Lexsi-Labs/CircuitKIT/main/docs/assets/circuitkit-logo-black.png" width="200" alt="CircuitKIT">
+  </picture>
+</p>
+
+# CircuitKIT Changelog
+
+All notable changes to CircuitKIT will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- **Hyperparameter ranges** (`circuitkit.utils.hparams`). Each hyperparameter now has a *valid*
+  range (outside it the value cannot work: `HyperparameterError`, a `ValueError`) and a *sensible*
+  range (inside valid, but earlier runs or the literature show it is risky: `HyperparameterWarning`).
+  `HyperparameterWarning` derives from `Warning`, not `UserWarning`, because importing
+  `circuitkit.api` ignores every `UserWarning`. Integer parameters must be integers (`ig_steps: 3.0`
+  is rejected instead of failing later in the backend). Only values you set explicitly are warned
+  about, so defaults never warn. `validation: {strict: true}` in a dict/YAML config, or
+  `CIRCUITKIT_STRICT_HPARAMS=1`, turns the warnings into errors (`ck.prune`, `ck.quantize` and
+  `ck.faithfulness` have no config, so only the environment variable applies to them). Checked in
+  `load_and_validate_config` (so `discover_circuit`, `evaluate_circuit`, the flat API, `Pipeline` and
+  the CLI), and in `ck.prune`, `ck.quantize` and `ck.faithfulness`. Parameters an algorithm does not
+  read are not checked (`ig_steps` is ignored by `eap`), and an unknown pillar name now fails before
+  any discovery work instead of after it. `eval.pillars: all` is accepted in a config. A
+  `HyperparameterError` keeps its type through the `@handle_errors` wrapper of `discover_circuit`,
+  `evaluate_circuit` and `benchmark_circuit`, which turns other `ValueError`s into `ValidationError`.
+  Only ranges with a citable basis are listed; the reference is generated into
+  `docs/reference/hyperparameters.md`.
+- `circuitkit hparams` prints the table of ranges (`--markdown` for the docs tables).
+- `CohereLabs/aya-expanse-32b` registered alongside Aya Expanse 8B through the
+  same `cohere1` TransformerLens compatibility port (`_tl_compat/cohere.py`) —
+  no new converter code, only the repo ID added to `AYA_EXPANSE_MODEL_NAMES`.
+  Validated on the real checkpoint: registration, config conversion,
+  truncated-depth parity (first 4 of 40 layers; KL(HF‖TL) 6.5e-9 to 5.3e-7,
+  argmax agreement 4/4) and module resolution for pruning scores and
+  quantization targets. Full-depth parity, discovery, evaluation and weight
+  steering do **not** run yet: the full model needs about 64 GiB for weights
+  alone, so it does not fit on most single GPUs, and transformer-lens 3.8.0's
+  multi-GPU (`n_devices`) block placement is broken
+  (blocks are placed by free memory, activations are moved by block index).
+  Those tests are skipped unless `CIRCUITKIT_RUN_AYA_EXPANSE_32B_FULL=1` is set.
+  See [docs/advanced/experimental-models.md](docs/advanced/experimental-models.md#tests).
+
+### Changed
+
+- Importing `transformer_lens` before `circuitkit` now raises `ImportError` instead
+  of warning and continuing with the Gemma-4 / Sarvam-MoE / Cohere patches absent.
+- TransformerLens compatibility now targets **3.8.0 only**; the former 2.18 path
+  is not supported. Cohere config conversion is maintained in `_tl_compat/cohere.py`,
+  and Cohere/SmolLM3/Gemma-4 converters preserve the HF context limit because TL 3.8
+  constructs causal masks for active input lengths.
+- Gemma-4 and Sarvam-MoE are documented as discovery-only experimental ports, with
+  weight-memory estimates and Sarvam's `trust_remote_code=True` requirement;
+  end-to-end evaluation/intervention support is not claimed.
+- TransformerLens patch `0005-memory-no-weight-copies` is now opt-in via
+  `CIRCUITKIT_TL_MEMORY_PATCH=1` because it changes bf16 accumulation order.
+- CUDA `expandable_segments` is configured at model load, not when importing
+  CircuitKIT, avoiding an allocator side effect from a package import.
+- The Cohere config converter is kept only in `_tl_compat/cohere.py`; the duplicate
+  copy in patch `0006` is gone, and local checkpoint folders resolve from their
+  `config.json` instead.
+- `model.trust_remote_code` in YAML/dict configs, and `--trust-remote-code` on
+  `circuitkit discover`, now reach the loader, so Sarvam-MoE is loadable outside
+  `load_model`. It stays opt-in: absent or false forwards nothing, and enabling it
+  logs a warning that model-repository code will be executed.
+- **Logo refresh.** New chip-mark identity across the repo: the CircuitKIT lockup (wordmark now spelled with a capital "KIT"),
+  a vector mark, and a favicon set, all in `docs/assets/`. The docs header, favicon and landing hero use them, and every README,
+  the root docs and the example notebooks carry the lockup. The lockup PNGs have true transparency (no baked-in halo). The old
+  `*-v3` bipartite-graph assets were removed.
+- Docs accent colour is now the logo orange `#FF4B0A` (links, buttons, landing animation, glows, docs badge); it was `#EC5A2C`.
+- Docs site now builds with a small template override (`overrides/main.html`) for the SVG favicon, ICO fallback and iOS icon.
+- **Defaults.** `discovery.ig_steps` now defaults to 3 (it was 5, and the EAP-IG backends
+  fell back to 30 when it was unset). It only affects the EAP-IG family, and the EAP-IG paper
+  (Hanna et al., 2024) finds every value above 2 similarly faithful (the authors used 5 to
+  leave a margin). `eval.n_stability_runs`
+  and the stability pillar now default to 3 (was 5). `Pipeline.evaluate` and `ck.faithfulness`
+  now run only the two basic pillars (`patching`, `ablation`) by default; pass `pillars="all"`
+  for every pillar (what `pillars=None` used to mean). `run_full_faithfulness(pillars=None)`
+  is unchanged and still runs every pillar, and so does a dict-config run with
+  `full_faithfulness_eval: true`. EAP-GP reads the same `ig_steps` key but keeps its paper
+  default of 5 when the key is not set, on every route (dict config, flat API, Pipeline,
+  CLI); `circuitkit discover --ig-steps` is unset by default for the same reason.
+  `circuitkit run` follows `Pipeline.evaluate`: an `evaluate:` block without `pillars:` now runs
+  the two basic pillars instead of all of them; list `pillars:` (or `pillars: all`) for more.
+
+### Fixed
+
+- Hyperparameter checks: `eval.pillars: []` is now an error (it would run nothing), and an
+  ACDC grid point too large to compute (`tao_exps: [400]`) is reported as tau >= 1 instead of
+  being skipped.
+- The EAP qkv activation-memory preflight now estimates activation storage from
+  batch size, sequence length, model dimensions and dtype, and uses CUDA's
+  actual free-memory query. It emits an advisory `RuntimeWarning` instead of
+  refusing a run from an approximate estimate; set
+  `CIRCUITKIT_SKIP_MEM_GUARD=1` to silence it.
+- Docs and README pointed at `lexsi-labs.github.io/circuitkit/`, which 404s; the site lives at `https://circuitkit.lexsi.ai/`.
+  Also fixed the README "Applications" deep link.
+- Stale version strings: landing-page chip, both BibTeX blocks and the install check said `1.0.0`; they now read the installed package version.
+  `CITATION.cff` release date corrected, and the release-notes page now explains the older `v1.0.0` internal milestone.
+- Issue-template contact links pointed at a personal fork, and the contributing guide pointed to GitHub Discussions (not enabled).
+- `tests/apply/test_hallucination_detection.py::TestLinearProbe::test_probe_get_logits`
+  was flaky (~2.8% of runs) because it asserted that randomly initialised probe
+  logits fall outside [0, 1]; it now pins the probe weights and input.
+- The patch-hook test no longer hard-codes `PATH=/usr/bin:/bin` for its `git apply`
+  subprocess, which broke `git` lookup on Windows and on macOS installs that keep
+  it in `/opt/homebrew/bin`.
+- An example notebook's saved output contained an absolute `/home/jovyan/...` path
+  from the machine it was recorded on.
+- The README and CHANGELOG logo and doc links used repo-relative paths, so the logo
+  rendered blank on the PyPI project page (which renders the README outside the
+  repository) and the internal doc links 404'd there. They are now absolute
+  `raw.githubusercontent.com` / GitHub URLs.
+- The ACDC docs and a code comment gave the default threshold grid as `tao_bases=[1, 3, 5, 7, 9]`
+  (20 sweeps); the backend default is `[1, 5]` (8 sweeps). The docs now match the code.
+- The edge-level `attribute()` passed `steps=None` to the EAP-IG scorers when `ig_steps` was
+  unset, which raised a `TypeError` in `range(1, steps + 1)`; it now uses 3 like the node-level path.
+- `circuitkit validate-config` only parsed the YAML and printed "Configuration is valid" without
+  running any check. It now runs the same validation as `discover` and `evaluate` (including the
+  hyperparameter ranges) and exits non-zero on an invalid config; `--strict` also fails on
+  warnings. A `circuitkit run` pipeline YAML gets an explicit message instead of a misleading error.
+- **Behaviour change:** `ck.benchmark()` and the underlying `run_lm_eval` /
+  `export_and_benchmark` / `compare_base_vs_intervened` helpers default to
+  `dtype="float32"` again. The `bfloat16` default introduced under "VRAM policy
+  changes" below changed benchmark numbers (about 0.3-1% of predictions) and is
+  undone here; pass `dtype="bfloat16"` to keep the roughly halved benchmark VRAM.
+- `optimize_memory_usage`'s per-process VRAM cap folded other processes' usage
+  into the cap in a way that always landed back at `max_fraction` regardless
+  of how much was actually free on a shared GPU — the exact failure its own
+  comment claimed to fix. It now actually shrinks as other tenants' usage
+  grows, and never drops below this process's own already-reserved memory.
+  When under 5% of the device would be left for this process (the device is
+  all but full), no cap is set and a warning is logged, since the cap is
+  applied once and would otherwise outlive the other tenants.
+- `enable_expandable_segments()` is now also skipped on Windows, where PyTorch
+  does not support this allocator setting and warns if asked.
+- Un-gated 8 more fast-tier modules (`tests/apply/test_pruner.py`,
+  `tests/unit/test_api.py`, `test_pillars.py`, `test_quick_api.py`,
+  `test_quick_extensions.py`, `test_score_loader.py`, `test_end_to_end.py`,
+  `tests/test_custom_data.py`) and `tests/unit/test_finetune_utils.py` from
+  `_SLOW_MODULES`: each was marked `network`/`slow` at the directory or
+  module level even though its only gated behavior is an orthogonal
+  `skipif(not torch.cuda.is_available())`, confirmed via a full offline sweep.
+- `evaluation.hf_checkpoint._load_causal_lm` still passed the deprecated
+  `torch_dtype=` keyword to `AutoModelForCausalLM.from_pretrained`; replaced
+  with `dtype=`.
+- The IOI EAP-IG visualization pages (`docs/assets/ioi_eap-ig.html` and its
+  `examples/visualization/` duplicate) loaded `elkjs` from jsDelivr with no
+  pinned version and `d3` with no Subresource Integrity. Pinned `elkjs` to
+  `0.12.0` and added SRI (`integrity`/`crossorigin`) for both scripts.
+
+## [Unreleased] (next release)
+
+The next release after 0.1.8; the release pipeline assigns its number. (The `[1.0.0]` and
+`[0.2.0]` drafts further down were never published.)
+
+### Changed
+- One environment on **transformer-lens 3.8.0** and **transformers >=5.15,<6**
+  (huggingface-hub >=1.5,<2), so CircuitKIT installs next to the other Lexsi
+  libraries. The TransformerLens patch series (Gemma-4, Sarvam-MoE, Cohere) moved to
+  `circuitkit/_tl_patches` and is applied in memory by an import hook that
+  `import circuitkit` installs; `scripts/apply_tl_patches.py` and the separate
+  environment are gone. Import `circuitkit` before `transformer_lens`.
+- ACDC uses TransformerLens 3's `TransformerLensKeyValueCache`, so `circuitkit.api`,
+  `Pipeline`, `ck.discover`, prune, edit, steer and export all import and run on TL 3.
+- `load_model`, `Pipeline`, the `api` loaders, the CLI, the benchmarks and the score
+  extractors load without TransformerLens weight processing by default
+  (`fold_ln`, `center_writing_weights`, `center_unembed`, `fold_value_biases` are
+  keyword arguments, all `False`). The weights then equal the Hugging Face ones.
+  Pass `fold_ln=True` etc. for the old behaviour.
+- `export_checkpoint` / `save_pruned_checkpoint` write the model's **current**
+  weights (TransformerLens -> HF conversion for GPT-2, Llama, Mistral, Qwen2, Cohere,
+  Cohere2), then apply the pruning mask. ROME / MEMIT edits and weight steering used
+  to be dropped silently because the original HF weights were exported. Every
+  exported tensor is checked by converting it back with TransformerLens's loader.
+  `weights="original"` keeps the old behaviour; other architectures and
+  `fold_ln=True` models fall back to it with a warning. An artifact of `None`
+  exports without pruning. A tied `lm_head` whose weights no longer match the
+  embedding is untied.
+- The CLI, `benchmarks.benchmark`, both `score_extractor`s and the `api` loaders go
+  through one loader (`quick._from_pretrained`), so local checkpoint folders and
+  unlisted Hub ids work everywhere.
+- `__version__` comes from the installed package metadata; the release helper no
+  longer rewrites `src/circuitkit/__init__.py`.
+- `circuitkit run`: a `benchmark:` block now runs when present and is skipped
+  only with `enabled: false`, matching `evaluate:` and `visualize:`. It used to
+  need `enabled: true`, so `benchmark: {tasks: [boolq]}` on its own did nothing.
+  Pipeline files that carry a benchmark block they do not want run should set
+  `enabled: false`.
+- `circuitkit run` passes every `discovery:` key through to the discovery
+  config (it used to keep three and drop the rest, so IBCircuit's
+  `num_epochs` / `learning_rate` / `alpha` / `beta` could not be set), accepts
+  `applications:` as a mapping keyed by type as well as a list, forwards
+  `protect_layers` and a top-level `device`, and writes
+  `faithfulness_report.json` to `output_dir` after evaluation.
+
+### Added
+- `lexsi_provenance.json` (schema `lexsi.provenance/1`) in every exported checkpoint
+  folder, and a `provenance` key in every `*_scores.json`. When the model came from a
+  folder with its own `lexsi_provenance.json` (a SafeTune or AlignTune output), that
+  record is nested under `inputs[0].provenance`. See `circuitkit.provenance`.
+- `*_scores.json` also carries `safety_units` and `layer_suggestions`, the keys
+  SafeTune's `core/circuit_kit/adapter.py` reads, derived from the top 20% of
+  `node_scores` (`CircuitScores.to_json(top_fraction=...)`). Readers of
+  `node_scores` are unchanged; `CircuitScores.from_dict` ignores the new keys.
+- `arch_registry`: the `cohere` family's name lists Aya Expanse and Tiny Aya.
+- Experimental, discovery-only TransformerLens ports for Gemma-4
+  (`google/gemma-4-31B-it`) and Sarvam-MoE (`sarvamai/sarvam-30b`) on
+  transformer-lens 3.8.0; evaluation/intervention support is not claimed.
+  It replaces the TransformerLens fork vendored in the audit repo.
+  The new `0004-gemma4-hf-parity` fixes three places where that fork disagreed
+  with Hugging Face on Gemma-4: global-layer RoPE, the final logit softcap and
+  `layer_scalar`.
+- `circuitkit.backends._tl_compat` (Tiny Aya, Command R7B, Aya Expanse, SmolLM3)
+  also applies on transformer-lens 3.8 with transformers 5 (`rope_theta` is read
+  from `rope_parameters` there). It used to raise `RuntimeError` on any
+  transformer-lens but 2.18.
+- TransformerLens patch `0006-cohere`: `HookedTransformer` support for Aya Expanse
+  (`CohereForCausalLM`) and Tiny Aya (`Cohere2ForCausalLM`), including local
+  checkpoint directories. Tiny random models match Hugging Face logits to 1e-7.
+- `load_model` (and so `Pipeline`) and the `api` model loaders take a local
+  checkpoint directory or any Hub repo id; the architecture is read from its
+  `config.json`. Vision-language checkpoints (`aya_vision`, `cohere_compass`) are
+  rejected with an error naming the text-only alternatives.
+- `qa` dataset shape: plain `{question, answer}` tables, optionally with
+  `corrupted_question` / `corrupted_answer`. `circuitkit data check` and
+  `data prepare` listed `qa` in their help but had no adapter, so a
+  two-column CSV failed with "Could not auto-detect dataset shape".
+- `FaithfulnessReport.metadata` carries `patching_raw_ratio` and
+  `ablation_raw_ratio`, the signed ratios behind the [0, 1]-clipped scores.
+- Corruption strategies have a `prepare(examples)` hook for dataset-derived
+  state.
+
+### Fixed
+- `corruption: {strategy: entity_swap | token_swap | role_swap}` in a task YAML
+  could never produce a corrupt half ("100% corrupted prompts are identical").
+- The robustness pillar scored uncorrupted data as a `paraphrase` variant
+  (`robustness_ratio=1.0` for every circuit) and skipped `entity_swap` /
+  `token_swap`, which it can generate.
+- A pinned device was ignored by discovery and evaluation.
+
+### Fixed
+- **GLUE task corruption plumbing.** When a GLUE task was corrupted with a
+  corruption *strategy*, the strategy's returned dict (which overwrites
+  `"prompt"` and sets no `"corrupted"` key) was handed straight to the
+  tokenizer, so `clean == corrupted` and the patch-faithfulness denominator
+  collapsed to zero. The corrupted prompt is now wired into the `"corrupted"`
+  field before tokenization, restoring a well-defined clean-vs-corrupted
+  contrast (`src/circuitkit/tasks/builtins/glue.py`).
+
+### Added
+- **Authored contrastive pairs for GLUE tasks.** `GLUETaskSpec` now honours an
+  explicit `corrupted_prompt` (+ optional `corrupted_answer` / `answer_incorrect`)
+  on each example, mirroring `GenericTaskSpec`. This is the preferred path for
+  non-syntactic tasks: an authored label-flipping pair gives a clean logit-diff
+  metric (`logit(correct) − logit(incorrect)` over the two real class tokens)
+  instead of the near-zero signal from meaning-preserving paraphrase/distractor
+  corruptions.
+- **`sparsegpt` registered in the algorithm registry.** `SparseGPTBaseline`
+  already shipped as a benchmark baseline but was missing from
+  `circuitkit.backends.ALGORITHMS` (the single source of truth), so
+  `CircuitScores` validation rejected it. It is now registered as a
+  research-tier pruning baseline.
+- **Interactive circuit visualization sample.** A rendered EAP-IG circuit for
+  GPT-2 on IOI ships at `examples/visualization/ioi_eap-ig.html` and is embedded
+  live in the [Visualization](https://github.com/Lexsi-Labs/CircuitKIT/blob/main/docs/user-guide/visualization.md) docs page.
+
+### Changed
+- **Brand name `CircuitKit` renamed to `CircuitKIT`** across documentation,
+  comments, docstrings, and user-facing strings. Public Python identifiers
+  (`CircuitKitError` and its subclasses, `CircuitKitImportance`,
+  `CircuitKitLogger`, `CircuitKitFormatter`) are intentionally left unchanged to
+  preserve import/API compatibility.
+- **Example/tutorial notebooks re-run and updated.** The `examples/notebooks/`
+  set (`01`–`07`) was re-executed and refreshed with current outputs, and the
+  consolidated numbering plus the `23-jailbreak-refusal-multi-model` case study
+  are the versions that were actually run.
+
+### VRAM reduction pass — numerically identical (`perf/vram-optimizations`)
+
+A static audit of GPU memory usage across discovery, evaluation, steering and
+pruning found several sources of unnecessary VRAM that did not change any
+result. All verified bitwise/exactly identical against a pre-change reference
+on gpt2 (fp32) and Llama-3.2-1B-Instruct (bf16):
+
+- **qkv activation flags leaked across calls.** `discover_circuit()` and
+  `evaluate_circuit()` set `use_attn_result` / `use_split_qkv_input` /
+  `use_hook_mlp_in` (an ~n_heads x activation multiplier while set) and never
+  restored them, so every later step on that model paid the cost. They are now
+  scoped to the stage that needs them via a restore-on-exit context manager
+  (`circuitkit.api._qkv_flags_enabled`), and a preflight guard
+  (`_check_qkv_flag_memory_headroom`) raises an actionable `MemoryError`
+  before enabling them when the estimated activation blow-up will not fit on
+  the device, naming the algorithm, `n_heads`, and the `ibcircuit` escape
+  hatch. It is a no-op on CPU, on models under 1 GB of weights, and on
+  integer parameter dtypes.
+- **Per-batch buffers and hook closures were never freed.** The EAP-family
+  scorers (`get_scores_eap`, `get_scores_eap_ig`, `get_scores_ig_activations`,
+  `get_scores_clean_corrupted`, node- and edge-level) and both `evaluate_graph`
+  implementations allocated a fresh activation-difference buffer every batch
+  while the previous one was still referenced, so two buffers coexisted at the
+  peak. They are now released at the end of each iteration.
+- **Parameter gradients were never freed**, and the IG-activations scorers ran
+  reference forwards under autograd and needed `retain_graph=True` across every
+  node x step backward pass. Reference forwards now run under `torch.no_grad()`
+  and every scorer calls `model.zero_grad(set_to_none=True)` after scoring.
+  The EAP scorers additionally keep only the embedding weights differentiable
+  while attributing (they anchor the residual stream in the graph so every
+  backward hook still fires; nothing else is read).
+- **`discover()` -> `evaluate()` reloaded the model.** `Pipeline` now loads the
+  model once via `_ensure_model()` and threads it through both
+  `discover_circuit()` and `evaluate_circuit()`.
+- **`expandable_segments:True`** is enabled at model-load time, not at package
+  import (`circuitkit.utils.device.enable_expandable_segments()`, with a
+  `CIRCUITKIT_NO_EXPANDABLE_SEGMENTS` opt-out), reducing fragmentation from
+  variable-shaped activation buffers without changing allocator state merely
+  by importing CircuitKIT.
+- **Every faithfulness pillar recomputed the same baselines.** Pillar 1
+  already computes the clean/corrupt baselines and the patched circuit's
+  score; Pillars 2 and 5 now reuse them instead of repeating those forwards.
+- **Weight steering (`CircuitWeightSteering`) held two full fine-tuned model
+  copies** for its whole lifetime just to read a few per-head weight slices
+  out of them; it now keeps only those slices (on CPU).
+- **The Taylor pruning selector** backpropagated through every parameter to
+  read grads at two (`attn.W_O`, `mlp.W_out`); it now restricts
+  `requires_grad` to the weights it actually scores.
+
+### Removed / hardened
+- `utils/optimization.py` deleted — unreferenced anywhere in the library,
+  tests, CLI or docs, and its entry point imported a module
+  (`circuitkit.backends.algorithm_optimizer`) that does not exist.
+- `utils/memory.py`'s `optimize_memory_usage()` no longer sets a flat 80%
+  per-process CUDA memory fraction unconditionally; it now scales the cap from
+  memory actually free at call time (still bounded above at 80% by default).
+
+See `perf/vram-policy-changes` for a companion set of changes that reduce
+VRAM further but change numeric output (benchmark precision default, an MMLU
+sampling fix), kept separate pending review.
+
+### VRAM policy changes — changes results, needs review (`perf/vram-policy-changes`)
+
+Companion to the numerically-identical VRAM reduction pass on
+`perf/vram-optimizations`. Kept on a separate branch since these change
+numeric output or example selection:
+
+- `run_lm_eval` / `ck.benchmark()` now default to `dtype="bfloat16"` instead of
+  `"float32"` (pass `dtype="float32"` for the old behavior). Measured on the
+  first 300 ARC-Easy validation questions: benchmark model VRAM roughly
+  halved, 99.0-99.7% of predictions unchanged across two models tested.
+  *Superseded:* the default is `"float32"` again (see the top `[Unreleased]`
+  section); `bfloat16` is opt-in.
+- `Pipeline.benchmark()` now moves its resident TransformerLens model(s) to
+  CPU for the duration of the lm-eval/vLLM benchmark call, restoring them
+  after — the benchmark loads its own copy and previously the two could
+  collide on a single device.
+- The MMLU EAP dataloader now honors `discovery.data_params.num_examples`
+  (ported from the public 0.1.5 release): previously it ignored the cap and
+  built every subject's full sample, so `num_examples=16` built ~1000
+  examples instead of 16.
+- `tokenize_batch_pair` gained an optional `max_length` (forwarded to the
+  existing `tokenize_plus` support), default `None` — unbounded, unchanged.
+  Not yet wired to any discovery/eval config key.
+
+### Added — multi-model discovery/evaluation/intervention support (Command R7B, Aya Expanse 8B, SmolLM3-3B)
+
+Extends the TransformerLens compatibility port introduced for Tiny Aya
+(`circuitkit.backends._tl_compat`, `cohere2`) into a shared multi-architecture
+seam, and adds three new model families across all three CircuitKIT
+surfaces — discovery, evaluation, and interventions:
+
+- **Command R7B** (`CohereLabs/c4ai-command-r7b-12-2024`, `cohere2`) — same
+  architecture as Tiny Aya; new is a genuine, non-no-op `logit_scale=0.25`
+  fold and an `n_ctx` cap (132096 → 8192) to avoid TL's dense causal-mask OOM
+  on long-context configs.
+- **Aya Expanse 8B** (`CohereLabs/aya-expanse-8b`, `cohere1`/`CohereForCausalLM`) —
+  a simplification of cohere2: no sliding window, rotary applies to every
+  layer (no NoPE), `logit_scale=0.125`.
+- **SmolLM3-3B** (`HuggingFaceTB/SmolLM3-3B`, `smollm3`) — a new Llama-family
+  port: RMSNorm, sequential attn/MLP block, standard (non-interleaved) Llama
+  rotary, and **per-layer NoPE** driven by the HF config's `no_rope_layers`
+  list. New `smollm3` entry in `applications/arch_registry.py`.
+
+Each model's real-weight parity gate (TL-vs-HF next-token KL) passed several
+orders of magnitude under the `< 1e-4` gate; `discover_circuit` validated on
+5 of the 6 stable algorithms (`eap`, `eap-ig`, `eap-gp`, `ibcircuit`, `cdt` —
+`acdc` is excluded from the standard gate as impractically slow on 3–8B
+models, its test exists behind a separate opt-in flag);
+`circuitkit.api.evaluate_circuit` faithfulness confirmed finite; and pruning
+score extraction, quantization target-module resolution, and weight-steering
+setup all confirmed on real weights. Quantization validation is scoped to
+target-module resolution only (`optimum-quanto`/`llmcompressor` are optional
+dependencies not installed in the validation environment) — this is not a
+full compression run. This same intervention/evaluation validation pass also
+covers **Tiny Aya**, the pre-existing baseline model this work extends, for
+the first time.
+
+New docs: `docs/advanced/experimental-models.md` (Command R7B, Aya Expanse,
+SmolLM3), cross-linked from `docs/advanced/tiny-aya.md`; updated
+`docs/advanced/architecture-registry.md` for the expanded `cohere` family
+and new `smollm3` family. See both pages for the full architecture tables,
+config→TL mapping, and the per-model opt-in test env vars
+(`CIRCUITKIT_RUN_COMMAND_R7B`, `CIRCUITKIT_RUN_AYA_EXPANSE`,
+`CIRCUITKIT_RUN_SMOLLM3`, plus `_ACDC` variants).
+
+## [Unreleased] (draft "1.0.0" — never published)
+
+### Changed (BREAKING) — submodules renamed to stop shadowing installed packages
+
+Four top-level submodules had names that collide with installed top-level
+packages. When anything places `src/circuitkit` on `sys.path`, a bare
+`import <name>` would resolve to circuitkit's submodule instead of the real
+package — most damagingly `import datasets` resolving to `circuitkit.datasets`,
+which broke `transformer_lens` (it does `from datasets.arrow_dataset import
+Dataset`). The submodules are renamed to non-colliding names:
+
+| Old import path         | New import path          | Collided with          |
+|-------------------------|--------------------------|------------------------|
+| `circuitkit.evaluate`   | `circuitkit.evaluation`  | HuggingFace `evaluate` |
+| `circuitkit.selectors`  | `circuitkit.selection`   | stdlib `selectors`     |
+| `circuitkit.datasets`   | `circuitkit.data`        | HuggingFace `datasets` |
+| `circuitkit.scripts`    | `circuitkit.tooling`     | namespace `scripts`    |
+
+This is a hard rename with **no runtime alias** (a compatibility shim would
+either re-introduce the shadow or install a global `sys.meta_path` hook at
+import time, which is inappropriate for a library). Update imports directly,
+e.g. `from circuitkit.evaluation.report import FaithfulnessReport`. The
+`circuitkit.evaluate_circuit` *function* is unaffected. `circuitkit.datasets`'s
+invariance-group content now lives at `circuitkit.data.invariance_groups`.
+
+### Added
+- Deprecated alias `circuitkit.visualize` -> `visualize_circuit` (H1 from the
+  1.0.0 audit): the pre-1.0 name keeps working through 1.x with a
+  `DeprecationWarning`; removal planned for 2.0.
+- 3 end-to-end case-study notebooks in `examples/case-studies/` (#69):
+  - `21-quantization-permanent-unlearning.ipynb` — circuit-guided quantization
+    for permanent knowledge removal that survives fine-tuning recovery attacks
+  - `22-gender-bias-audit-and-mitigation.ipynb` — full responsible-AI loop:
+    discover bias circuit, audit with faithfulness pillars, mitigate via
+    selective fine-tuning/pruning, re-audit with capability preservation
+  - `23-jailbreak-refusal-multi-model.ipynb` — localize jailbreak refusal
+    across three instruction-tuned models (Llama-3.2-1B, Qwen2.5-1.5B,
+    gemma-2-2b), separating finding a behavior from acting on it
+
+### June 2026 — `logger` scope audit after print()→logging sweep (Issue #67)
+
+A prior sweep replacing `print()` calls with `logger.*()` across the codebase
+mechanically inserted `logger` calls into functions without first ensuring a
+`logger` was actually bound in scope, causing `NameError` / `UnboundLocalError`
+at runtime. Two patterns were found and fixed:
+
+- **Logger used but never assigned** — function calls `logger.info(...)` etc.
+  with no local or module-level `logger` defined anywhere in the file.
+- **Logger assigned conditionally** — `logger` is only bound inside an `if`
+  branch, so Python treats it as a local for the whole function and any call
+  path that skips the branch hits an unbound local.
+
+Fixed by hoisting a single `logger = get_logger(...)` (or `logging.getLogger(...)`)
+to module/function top-level and removing the conditional assignment.
+
+- `src/circuitkit/utils/config.py`: `_validate_config` had `logger` assigned only
+  inside `if algo == "ibcircuit":` but used unconditionally at the end of the
+  function (conditional-assignment pattern); `load_and_validate_config` called
+  `logger.info(...)` with no `logger` defined at all (never-assigned pattern).
+  Both fixed by hoisting `logger = get_logger(...)` to the top of each function.
+- `src/circuitkit/tasks/builtins/ioi_legacy.py`: `_build_eap_dataloader` and
+  `_build_ibcircuit_dataloader` called `logger.*()` with no `logger` defined
+  anywhere in the file (the latter even imported `get_logger` but never called
+  it). Fixed by adding a module-level `logger = get_logger("task.ioi_legacy")`
+  and removing the dead local import.
+- `src/circuitkit/data/task_data/tasks/ioi/ioi_dataset.py`: `get_end_idxs` called
+  `logger.error(...)` in an exception handler with `get_logger` imported but
+  never instantiated. Fixed by adding a module-level
+  `logger = get_logger("data.task_data.ioi_dataset")`.
+- `src/circuitkit/data/task_data/tasks/ioi/utils.py`: `get_ioi_data_only` and
+  `_generate_ioi_data_fallback` had the same never-instantiated `get_logger`
+  import. Fixed by adding a module-level
+  `logger = get_logger("data.task_data.ioi_utils")`.
+
+An AST-based scan of every `.py` file under `src/circuitkit` for both patterns
+turned up no further occurrences; remaining `logger`-as-parameter and
+closure-style hits in `applications/pruning/pruner.py`, `utils/exceptions.py`,
+and `utils/logging.py` were manually reviewed and confirmed correct (logger is
+either an explicit constructor/decorator parameter with a `None` guard, or
+assigned and used within the same conditional branch).
+
+### May 2026 (session 5) — EasyEdit/PEFT integration, new corruption variants, robustness
+
+#### Official external repos in all KE and healing application scripts
+- `validation/applications/11_knowledge_editing_gpt2.py`: Replaced
+  `circuitkit.apply.rome_wrapper.RomeHandler` with EasyEdit
+  (`zjunlp/EasyEdit`, cloned to `validation/_vendor/EasyEdit`). All ROME
+  edits now go through `BaseEditor.from_hparams(ROMEHyperParams)`. Editor
+  instances are cached per target layer to avoid reloading the HF model for
+  each algorithm. Metrics use EasyEdit's built-in `rewrite_acc` /
+  `rephrase_acc` / `neighborhood_acc` instead of raw logit thresholds.
+- `validation/applications/25_knowledge_editing_llama_circuit.py`: Same
+  EasyEdit migration; uses `hparams/ROME/llama3.2-3b.yaml` as config
+  template, overrides `layers=[target_layer]` and `model_name` from script
+  args. Single `editor.edit()` call for all 6 facts.
+- `validation/applications/26_soft_healing_llama_circuit.py`: Replaced
+  `circuitkit.apply.soft_healing.CircuitLoRA` / `train_healing_lora` with
+  HuggingFace PEFT (`LoraConfig` + `get_peft_model`). Circuit-restricted
+  healing uses `layers_to_transform` (top-K circuit layers by score);
+  unrestricted baseline uses all layers at the same rank. Training on
+  `tatsu-lab/alpaca` (1k samples), evaluation on `cais/mmlu` (HF model
+  direct, no TL dependency). MMLU eval is a clean 5-shot log-prob loop.
+
+#### New Pillar 4 corruption variants
+- `src/circuitkit/corruption/position_shift.py` (new): `PositionShiftCorruption`
+  shuffles or rotates sentence-level segments. Uses `_SPLIT_PATTERN` to split
+  on sentence boundaries; returns record unchanged (validation fails) when fewer
+  than 2 segments are found.
+- `src/circuitkit/corruption/__init__.py`: Added `PositionShiftCorruption` export.
+- `src/circuitkit/evaluate/pillars/robustness.py`: Added `logical_negation`,
+  `format_distractor`, `position_shift` to `valid_variants`.
+- `src/circuitkit/evaluate/full.py`: Auto-builds rule-based corruption
+  dataloaders before the robustness pillar for `logical_negation`
+  (NegationCorruption), `format_distractor` (DistractorInjectionCorruption),
+  and `position_shift` (PositionShiftCorruption) when they appear in
+  `corruption_variants` but no dataloader has been supplied by the caller.
+
+#### Token alignment audit utility
+- `src/circuitkit/data/normalized_task.py`: Added `validate_token_alignment(
+  task_spec, model=None)`. Reports counts and fractions of same-prompt,
+  empty-prompt, and multi-token-answer records. Uses actual tokenization when
+  a model is provided; falls back to whitespace heuristic otherwise. Exported
+  from `__all__`.
+
+#### IBCircuit OOM pre-flight check
+- `src/circuitkit/backends/ibcircuit/trainer.py`: Added CUDA memory check at
+  the start of `run_ib_discovery`. Estimates required VRAM as
+  `n_params * 4 bytes * 4x overhead`; raises `MemoryError` with a clear
+  message (suggests EAP-IG as alternative) if estimated usage exceeds 90% of
+  free memory. Avoids silent OOM mid-training on models above ~3B parameters.
+
+#### ROME MLP-only layer selection
+- `src/circuitkit/apply/knowledge_editing.py`: `_select_best_edit_layer` now
+  filters strictly for MLP nodes (checks `'mlp' in node_name.lower()`). Using
+  attention layers as ROME targets is architecturally invalid; the code now
+  raises `ValueError` with a clear message if no MLP nodes are found in the
+  circuit, rather than silently falling back to an attention layer.
+
+### May 2026 (session 4) — all-pillar safety eval, generalization hardening, PENDING.md
+
+#### Safety pillar eval: all 7 pillars now passing for AdvBench and WMDP
+- `validation/applications/28_safety_dataset_pillar_evals.py`: Added
+  `tl_model.cfg.use_split_qkv_input = True` and `tl_model.cfg.use_hook_mlp_in = True`
+  to model setup so Pillar 3 (stability re-discovery via EAP-IG) no longer crashes.
+  Both datasets now complete status=WORKING across all 7 pillars.
+
+#### Architecture hardening
+- `src/circuitkit/tasks/builtins/mmlu.py`: Removed four silent `get('model_name', 'gpt2')`
+  fallbacks; now accesses `discovery_cfg['model_name']` directly. The key is already
+  validated (and raises ValueError) in `_resolve_configs`, so the fallback was dead code
+  that masked misconfigured callers.
+- `src/circuitkit/backends/cdt/pyfunctions/cdt_source_to_target.py`: Removed unused
+  `n_layers=12` parameter from `batch_run` signature (parameter was never read).
+
+#### PENDING.md — known-issues checklist
+- Added `PENDING.md` at repo root capturing every open issue from Hem's audit:
+  CD-T RoPE/gated-MLP approximations, missing Pillar 4 corruption variants,
+  Pillar 6 (generalization) not yet run on safety data, IBCircuit OOM above 3B,
+  Llama-3.2-3B KE/healing drivers not yet run, ROME attention-fallback validity,
+  and missing model-agnostic KE method.
+
+### May 2026 (session 3) — validation fixes, WMDP factory, custom IOI pairs, safety pillar end-to-end
+
+#### Validation bug-fixes
+- `validation/algos/12_all_algos_llama.py`: Fixed `DatasetShape.CONTRASTIVE` (no such
+  enum value) -> `DatasetShape.PAIRWISE`. Fixed custom IOI pairs to use distinct
+  clean/corrupt prompts (name-swapped, e.g. "Mary and John" vs "John and Mary") so
+  EAP activation_difference is non-zero. All 5 algos + custom IOI now WORKING on Llama.
+- `validation/applications/28_safety_dataset_pillar_evals.py`: Full end-to-end fix:
+  - Changed `pairing_mode` from `"answer_contrastive"` (same prompt = zero activation
+    diff) to `"harmful_vs_benign"` for AdvBench discovery.
+  - Replaced missing `build_wmdp_spec` import with direct `WMDPTaskSpec` usage (then
+    moved to a proper factory once `build_wmdp_spec` was added to wmdp.py).
+  - Fixed graph retrieval: `discover_circuit` returns a list (pruned node names), not a
+    `Graph`. Now calls `_reconstruct_circuit_graph(model, scores_data, discovery_cfg,
+    pruning_cfg, device)` using the saved `CircuitScores` JSON.
+  - Fixed `run_full_faithfulness` call: passes `metric_fn=task_spec.metric_fn()` (the
+    function returned by the method, not the bound method itself).
+  - Fixed model loading: sets `tl_model.cfg.use_attn_result = True` after `from_pretrained`.
+  - AdvBench: WORKING (patching=-5.71, ablation=-5.67). WMDP: WORKING (patching=0.004).
+- `validation/applications/24_circuitkit_advbench_refusal_steering.py`: Changed
+  `pairing_mode` from `"answer_contrastive"` to `"harmful_vs_benign"` for discovery
+  (same-prompt pairs produce zero EAP activation difference).
+- `validation/data/12_e2e_safety_advbench_gpt2.py`: Same fix as above.
+
+#### tasks/builtins/wmdp.py: `build_wmdp_spec` factory
+- Added `build_wmdp_spec(subset, split, name, max_records)` factory function. Creates a
+  `_PinnedWMDPTaskSpec` subclass with `_resolve_configs` overridden to return the pinned
+  subset, so callers can get a named, subset-specific task spec without modifying the
+  main `WMDPTaskSpec` class.
+
+#### acdc_utils.py: generalized `make_nd_dict`
+- `make_nd_dict(end_type, n)` no longer raises `NotImplementedError` for n outside
+  {3, 4}. Now supports any n >= 1 via recursive `defaultdict` construction.
+
+### May 2026 (session 2) — MCircKE, CaKE, Circuit-Tuning, CURE/CLUE, safety evals, generalization
+
+#### New: Multi-hop and circuit-aware knowledge editing / unlearning
+- `apply/mcircke.py`: MCircKE (arxiv:2604.05876) — multi-hop circuit-guided knowledge
+  editing. Edits each hop in sequence with optional circuit re-discovery between hops.
+  `MCircKEEditor.edit()`, `MultiHopEdit`, `Hop`, `HopResult`, `MCircKEResult`.
+- `apply/cake.py`: CaKE — circuit-aware knowledge editing with locality. Uses top-k
+  circuit MLP layers from node_scores for targeted ROME edits.
+  `CaKEEditor.edit()`, `CaKEEdit`, `CaKEResult`.
+- `apply/circuit_tuning.py`: Circuit-Tuning — LoRA fine-tuning restricted to
+  circuit-identified MLP layers. KL retain loss prevents collateral forgetting.
+  `CircuitTuner.fit()`, `CircuitTunerConfig`, `CircuitTunerResult`.
+- `apply/cure_clue.py`: CURE/CLUE — circuit-restricted gradient-ascent unlearning.
+  Suppresses forget targets while preserving retain set via KL penalty.
+  CLUE extends CURE with per-locality-prompt preservation.
+  `CureClueUnlearner.unlearn()`, `CureClueConfig`, `CureClueResult`.
+- `apply/__init__.py`: All four new modules exported.
+
+#### New: Safety dataset Pillar 1-7 evaluation
+- `validation/applications/28_safety_dataset_pillar_evals.py`: Runs the full
+  faithfulness evaluation pipeline (Pillars 1-7) on AdvBench and WMDP.
+  Supports `--quick` (patching + ablation + intervention_reliability) and
+  `--datasets advbench wmdp` selection flags.
+
+#### SafetyPromptAdapter: generalized pairing modes
+- `data/adapters/safety_prompt.py`: Added `pairing_mode` parameter to `adapt()`.
+  Three modes: `"answer_contrastive"` (default; same prompt, refusal vs compliance
+  token — correct for circuit localisation), `"harmful_vs_benign"` (Arditi et al.
+  2024 style; different prompts), `"benign_vs_harmful"` (inverted).
+- `tasks/safety_datasets.py`: `_register()` now accepts and forwards `pairing_mode`.
+- Updated all validation scripts to pass explicit `pairing_mode`.
+
+#### Architecture generalization (de-hardcoding)
+- `utils/exceptions.py`: Extracted `SUPPORTED_ALGORITHMS` constant (12 algorithms).
+  All callers import this instead of duplicating a local list.
+- `artifacts/circuit_artifact.py`: `validate()` and `create()` now use
+  `SUPPORTED_ALGORITHMS` for method validation; `eap_ig` normalized to `eap-ig`.
+- `artifacts/scores.py`: Removed neuron-level `NotImplementedError`; neuron-level
+  `CircuitScores` now accepted with same schema as node-level.
+- `cli/main.py`: All 4 `click.Choice()` algorithm lists replaced with
+  `SUPPORTED_ALGORITHMS`; benchmark help text updated.
+- `cli/utils.py`: Removed 4 hardcoded model-name lookup tables (`_get_model_layers`,
+  `_get_model_d_model`, `_get_model_n_heads`, `_get_model_d_vocab`). ImportError
+  fallback now uses `AutoConfig.from_pretrained()` for any architecture.
+- `utils/memory.py`: `get_memory_efficient_config()` and `check_memory_requirements()`
+  now use `_estimate_model_params()` (HF AutoConfig) instead of name-substring lookup.
+  Works for any model — Llama, Mistral, Phi, Gemma, GPT-NeoX, etc.
+- `backends/cdt/pyfunctions/local_importance.py`: `range(12)` replaced with
+  `model.cfg.n_heads` (TL) or `model.config.num_attention_heads` (HF); fixes silent
+  wrong-head-count on any non-GPT-2-small model.
+- `backends/cdt/pyfunctions/cdt_source_to_target.py`: `prop_attention_probs_tmp`
+  now casts rel/irrel to weight dtype for cross-architecture type safety.
+
+#### PEAP bfloat16 fix
+- `backends/eap/attribute_node.py`: Per-position grad * act_diff accumulation now
+  casts to float32 before multiply to avoid dtype errors on bfloat16 models (Llama,
+  Mistral, Gemma). Also fixes `.norm()` dtype issue for per-pos summary.
+
+#### MasterGrid.run() implemented
+- `evaluate/master_grid.py`: `run()` no longer raises `NotImplementedError`. Now
+  iterates over (method, wrapper, seed) cells, calls `discover_circuit()`, writes
+  per-cell JSON to `out_dir/`, supports resume via cell caching.
+
+#### IOIDataset mutation error messages
+- `backends/cdt/pyfunctions/ioi_dataset.py` and `data/task_data/tasks/ioi/ioi_dataset.py`:
+  `__setitem__` / `__delitem__` now raise `TypeError` with a helpful message instead
+  of bare `NotImplementedError()`.
+
+#### Validation: Llama-3B all-algos suite
+- `validation/algos/12_all_algos_llama.py`: Runs all 5 key algorithms (EAP, EAP-IG,
+  AtP*, PEAP, RelP) end-to-end on `meta-llama/Llama-3.2-1B` with IOI task AND custom
+  IOI-type prompt pairs via NormalizedTaskSpec.
+- `run_validation_gpu1.sh`: Comprehensive GPU 1 run: GPT-2 suite (01-11), Llama suite
+  (12), and safety pillar evals (28).
+
+---
+### May 2026 — Reliability, CD-T stability, no-placeholder audit
+
+#### New: Pillar 7 — Intervention Reliability
+- `src/circuitkit/evaluate/pillars/intervention_reliability.py`: full implementation.
+  Three sub-scores — R1 (Spearman rho across re-run seeds), R2 (normalized effect
+  magnitude), R3 (1 - CV of intervention deltas) — combined as a harmonic mean
+  `reliability_index` in [0, 1].
+- Wired into `run_full_faithfulness()` (new `"intervention_reliability"` pillar key,
+  `n_reliability_seeds` parameter) and `FaithfulnessReport` (`intervention_reliability`
+  field + `__repr__` section).
+
+#### New: MMLU evaluation module
+- `src/circuitkit/evaluate/mmlu_eval.py`: `evaluate_mmlu(model, n_samples, shots)`
+  backed by lm-eval (primary) or direct HuggingFace datasets fallback (all 57 subjects,
+  5-shot, log-prob letter scoring).
+
+#### CD-T full propagation improvements
+- `gpt2_propagation.py`: Added `_normalize_rel_irrel()` (adelaidehsu/CD_Circuit
+  stabilisation rule) applied after every residual add for both GPT-2 and Llama paths.
+  Prevents sign divergence through deep stacks.
+- `adapter.py`: Fixed NameError — `_run_simple_cdt` now receives `device` as explicit
+  parameter rather than relying on outer-scope closure.
+
+#### Placeholder audit and fixes (apply/ module)
+- `hallucination_detection.py`: Replace `torch.randn()` mock activations in
+  `_get_circuit_activations()` and `HallucinationDataset._extract_activations()` with
+  real TransformerLens `run_with_cache` (preferred) or HF forward-hook fallback.
+- `structural_pruner.py`: Complete `_prune_mlp_neurons()` stub with real W_out /
+  down_proj zeroing (node-level MLP removal without shape change).
+- `benchmark_peft.py`: Replace `time.sleep(0.01)` placeholder loop with real AdamW
+  forward+backward passes; compute actual throughput, mean loss, perplexity pseudo-acc.
+
+#### App scripts (24–27) — critical bug fixes
+- Script 24 (AdvBench refusal steering): Fix `steer(return_handles=True)` (unsupported
+  kwarg) → per-prompt `steer(inputs, coefficient)` calls; remove duplicate dead branch;
+  fix `get_or_run_discovery` call from dict-positional to kwargs API.
+- Script 26 (soft healing): Fix `StructuralPruner` constructor — init takes no args;
+  `prune()` takes `(model, CircuitScores, sparsity, dry_run)`; add
+  `_node_scores_to_circuit_scores` helper.
+- Script 27 (TruthfulQA hallucination): Replace broken `HallucinationDetector` usage
+  (required `CircuitArtifact` + training) with direct `_circuit_off_circuit_ratio()`
+  using `run_with_cache`; real AUROC computation.
+
+#### RomeWrapper and soft_healing additions
+- `rome_wrapper.py`: Added `RomeWrapper` shim over `RomeHandler` for script 25 API.
+- `soft_healing.py`: Added `circuit` / `rank` kwarg aliases to `CircuitLoRA.__init__`;
+  added `_all_node_scores()`, `_build_alpaca_dataloader()`, `train_healing_lora()`.
+
+#### GPU-1 run scripts
+- `run_gpu1_ioi_gpt2.sh`: End-to-end GPT-2 IOI algo + application benchmark on GPU 1.
+- `run_gpu1_llama3b.sh`: Llama-3.2-3B-Instruct production run (apps 24–27, benchmarks
+  03/06/19) on GPU 1.
+
+### M7.1-M7.8: Extended Task Support & Corruption Framework
+- **GLUE Task Suite (M7.1)**: Support for General Language Understanding Evaluation benchmark
+  - Multi-task text classification support (RTE, MRPC, CoLA, SST2)
+  - Automatic dataset loading and preprocessing
+  - Standardized label handling for different GLUE datasets
+- **MMLU Task Support (M7.2)**: Multi-choice question answering on 57 subjects
+  - Direct integration with MMLU benchmark
+  - Subject-level filtering and analysis
+- **New Corruption Strategies (M7.3-M7.5)**: 
+  - Voice Swap Corruption: First/third person perspective changes
+  - Negation Corruption: Semantic negation injection while preserving structure
+  - Distractor Variation Corruption: Contextual distractors for robust evaluation
+- **Dataset Validation Framework (M7.6)**: Comprehensive validation for custom datasets
+  - DatasetValidator class for schema and content validation
+  - Support for validation against pre-defined templates
+  - Detailed validation reports with actionable errors
+- **Corruption Effectiveness Metrics (M7.7-M7.8)**: 
+  - CorruptionEffectiveness class for measuring corruption impact
+  - Effectiveness scoring based on behavioral changes
+  - Comparison across corruption types and datasets
+
+### M4.2-M4.8: Comprehensive Circuit Visualization Suite
+- **Activation Saliency Heatmaps (M4.2)**: ActivationSaliencyVisualizer
+  - Layer-by-layer, aggregate, and stacked visualizations
+  - Interactive Plotly-based heatmaps with token-level analysis
+  - HTML export and summary statistics
+- **Feature Saliency Maps (M4.3)**: FeatureSaliencyVisualizer
+  - Node importance ranking and bar charts
+  - Network-style visualization for circuit structure
+  - Gradient and patching-based attribution support
+- **Interactive Circuit Editor (M4.4)**: CircuitEditor
+  - Jupyter widget interface for add/remove nodes and edges
+  - Change history tracking and undo functionality
+  - JSON export of edited circuits
+- **Comparison Dashboards (M4.5)**: ComparisonDashboard
+  - Multi-seed stability analysis with Jaccard overlap metrics
+  - Corruption robustness comparison across conditions
+  - Cross-task generalization analysis
+  - Correlation matrices and transfer visualization
+- **Jupyter Widget Suite (M4.6)**: JupyterWidgetSuite
+  - Unified tabbed interface for all visualizers
+  - Automatic error handling and graceful fallback
+  - Optional HTML export of all visualizations
+- **Streamlit Dashboard (M4.7)**: StreamlitCircuitDashboard
+  - Multi-page web application for circuit analysis
+  - Circuit upload, visualization, and interactive analysis
+  - Real-time updates with responsive layout
+- **Visualization Gallery (M4.8)**: GalleryGenerator
+  - Auto-generate interactive HTML gallery from visualizations
+  - Searchable and filterable by visualization type
+  - Responsive card-based layout with full navigation
+
+### Earlier 1.0.0 groundwork (2026-05-16 internal pre-cut, never published)
+
+First stable release. This release closes a correctness-hardening cycle: an audit
+found and fixed 10+ serious bugs in code that had been marked "done". The public API
+is stable and the Stable-tier discovery path is validated (see README → *Validated
+configurations*). Experimental- and research-tier backends remain explicitly marked
+as such. The full found-and-fixed bug history is kept below and in earlier entries
+deliberately — for interpretability tooling an honest fix log is a trust signal.
+
+### Highlights of the hardening cycle
+
+- **bf16 / GQA correctness across the stack.** Discovery backends (PEAP, CD-T, ACDC)
+  and every application (knowledge editing + MEMIT construction, `CircuitWeightSteering`
+  K/V steering, circuit-localized fine-tuning) now run correctly on bf16 models and on
+  grouped-query-attention architectures. ACDC K/V destination nodes honor the ungroup
+  flag; CD-T uses bias-free gated-MLP handling and a correct pattern dtype.
+- **Chat-template handling.** Per-task `chat_template_mode` (`auto` / `on` / `off`),
+  end-to-end BOS consistency across CD-T, selectors, applications and fine-tuning, a
+  double-BOS tokenization fix in the MMLU / GLUE / generic dataloaders, and auto
+  chat-model detection. Discovery freezes the resolved policy into artifact metadata.
+- **Checkpoint export protocol.** 8 checkpoint export/eval correctness bugs fixed;
+  intervened (pruned / quantized) checkpoints are now exported as standard reloadable
+  HuggingFace checkpoints and are vLLM-evaluable via lm-eval.
+- **`lrp` pruning selector removed.** The orphan `lrp` selector was dropped; pruning
+  selectors are now `random`, `magnitude`, `taylor`, `wanda`, and `multi_granular`.
+- **Unified `scope` / `protect_layers` component selection.** `StructuralPruner.prune`,
+  `quick.prune`, and `quick.quantize` accept a consistent `scope` (`heads` / `mlp` /
+  `both`) and `protect_layers` API for choosing which component types an intervention
+  touches.
+- **`StructuralPruner` sparsity fix.** Non-head/MLP nodes (e.g. `Resid Start`) are
+  excluded from prune candidates — previously selectable but never masked, which
+  deflated the effective sparsity reported.
+- **Other fixes.** Wrong-axis structural pruning, unnormalized faithfulness scores
+  (normalized ratio + convention-agnostic layer overlap), Pillar 4 robustness no
+  longer fabricates zero-delta results, GSM8K answer-token labels on the Llama-3
+  tokenizer, silent corruption failure in custom-data ingestion, and a flat typed API
+  (`circuitkit.discover` / `prune` / ...) alongside the dict-config API.
+
+> _Versioning note:_ this release was briefly numbered `0.9.0` during the hardening
+> cycle; it ships as `1.0.0`, the first stable public release.
+
+### Chat-template support for instruction-tuned models (2026-05-16)
+
+Circuit discovery and downstream lm-eval benchmarking can now wrap task prompts
+in an instruction-tuned model's chat template, and discovery freezes the chosen
+policy so a discovered circuit is not misattributed to a prompt distribution the
+model is never run on.
+
+#### Per-task `chat_template_mode`
+- Every task now declares a `chat_template_mode` — `"auto"`, `"on"`, or `"off"`.
+  `"auto"` wraps prompts in the model's chat template iff the model is a chat
+  model (its tokenizer ships a `chat_template`); `"on"` always wraps; `"off"`
+  always uses raw text. `"auto"` is the default for downstream-behavior tasks
+  (`boolq`, `glue`, `mmlu`, `truthfulqa`, `ifeval`, `wmdp`, `gsm8k`,
+  `winogrande_mc`) and for custom user-defined tasks; `"off"` is the default for
+  diagnostic minimal-pair tasks (the IOI family, `sva`, `greater_than`,
+  `gender_bias`, `capital_country`, `hypernymy`, `double_io`) and for the cloze
+  `winogrande` task. Discovery and downstream lm-eval use the same setting, and
+  the resolved value is recorded in the discovery artifact metadata. New helper
+  module `src/circuitkit/tasks/_chat.py` (`resolve_chat_template`, `wrap_prompt`,
+  `to_tokens`, `model_is_chat`).
+- The `discover` CLI command gains a `--chat-template-mode auto|on|off` flag; it
+  is also settable as a `chat_template_mode:` field in task YAML. When unset, the
+  task's own default applies.
+
+#### New task
+- **WinoGrande-MC builtin** (`winogrande_mc`): a chat-templatable multiple-choice
+  reformulation of WinoGrande. Each item becomes an explicit MC question and is
+  scored with a single-token logit-difference metric on the answer-letter tokens
+  (via an option-swap corruption), so instruction-tuned models can be studied on
+  WinoGrande without the cloze suffix-log-likelihood metric that blocks
+  templating. The original `winogrande` (cloze, `metric="suffix_loglik"`) is
+  unchanged. Brings the built-in task count to **16**.
+
+#### Evaluation metrics
+- The lm-eval benchmarking paths (`evaluate/lm_harness.py`,
+  `evaluate/lm_eval_simple.py`, `evaluate/checkpoint_benchmark.py`) now
+  auto-apply the model's chat template for instruction-tuned checkpoints; the
+  setting is resolved once so original and pruned runs stay comparable.
+  Cloze / loglikelihood tasks (`winogrande`, `lambada`, `wikitext`) are kept raw
+  even then, since templating a cloze task has no user/assistant turn structure.
+
+### Correctness-fix round (2026-05-16)
+
+A focused correctness pass over the discovery harness and the compression
+selectors, plus the canonical reimplementation of the paper-faithful selectors.
+No public-API signature changes (`discover_circuit`, `evaluate_circuit`,
+`load_circuit` unchanged).
+
+#### Harness / selector bug fixes
+- **Pruning attention-head no-op.** Fixed a structural-pruning path where
+  zeroing an attention head's weights had no effect on the forward pass; the
+  pruned head is now genuinely removed from the computation.
+- **Faithfulness §10.1 normalization.** Corrected the normalization in the
+  §10.1 faithfulness computation so circuit/baseline/full scores are placed on
+  a comparable scale.
+- **WinoGrande scoring.** The WinoGrande task was rewritten: the previous
+  single-token last-position logit-diff scored ~chance (~0.51) because the
+  disambiguating cue lies *after* the blank. It now uses a **suffix
+  log-likelihood** metric (`metric="suffix_loglik"`) — it fills the blank with
+  each option and compares the model's log-likelihood of the multi-token suffix
+  span. This metric differs *in kind* from the single-token logit-diff used by
+  BoolQ / SVA / IOI; the discovery metric is now explicitly per-task.
+- **Wanda / AWQ flag.** Fixed a calibration-data flag so the Wanda and AWQ
+  selectors calibrate on general text (WikiText-2) rather than the downstream
+  task's EAP dataloader, matching the source papers.
+- **`multi_granular` MLP.** Fixed the MLP-component path of the
+  `multi_granular` pruning selector.
+
+#### Canonical (paper-faithful) selector reimplementation
+- The compression selectors were reimplemented to be honest about what they
+  compute. **Wanda** is now labelled "Wanda aggregated to component
+  granularity" (the genuine `|W| · E[‖X‖]` Wanda metric, lifted from
+  per-weight to per-component scores). **GPTQ** and **AWQ** are honestly
+  framed as *derived proxies* — `GPTQ-Hessian-diag` (the diagonal-Hessian
+  importance signal) and `AWQ-salience` (per-channel activation-magnitude
+  salience) — rather than presented as the full GPTQ / AWQ quantization
+  algorithms.
+
+#### New task
+- **GSM8K builtin** (`gsm8k`): open-ended-generation circuit discovery on
+  grade-school math word problems, scored with a differentiable
+  negative-log-likelihood on the answer span. Brings the built-in task count
+  to **15**. Known limitation: the EAP collate path supplies a single-token
+  answer proxy, so the metric scores a single-token answer rather than a full
+  multi-token numeric answer.
+
+#### Evaluation metrics
+- Added **WikiText-2 perplexity** (token-weighted, `wikitext-2-raw-v1` test
+  split) as a language-modelling evaluation metric — the canonical
+  Wanda / SparseGPT / GPTQ evaluation metric — used to measure the
+  language-modelling cost of compression interventions on held-out general
+  text, alongside general-text calibration for the selectors.
+
+#### Other correctness fixes
+- **IBCircuit KL constant.** Corrected a constant in the IBCircuit KL term.
+
+#### Dependencies
+- Pinned `transformer-lens>=2.18,<3` (from PyPI; verified against 2.18.x, which
+  adds Gemma-3 support), replacing the earlier 2.11 pin.
+
+#### Documentation
+- Re-verified every factual claim and code snippet in `README.md`,
+  `API_REFERENCE.md`, and `docs/` against the current code: corrected the
+  built-in task count to **15** (added `gsm8k`); documented WinoGrande's
+  suffix-log-likelihood metric and the per-task metric asymmetry across
+  `README.md` / `API_REFERENCE.md` / `docs/reference/FEATURES.md` /
+  `docs/guides/CONCEPTS.md` / `docs/DATASET_TYPES.md`; documented WikiText-2
+  perplexity where evaluation metrics are listed; fixed the `DISCOVERY_ALGORITHMS`
+  module reference to `circuitkit.backends`; and corrected the
+  `transformer-lens` pin in `docs/INSTALLATION.md` from a GitHub pin to the
+  PyPI `>=2.18,<3` pin.
+
+### Production-readiness hardening pass
+
+A production / open-source readiness pass: end-to-end bug fixes across the
+data → discovery → applications pipeline, a runnable test suite, an
+algorithm-registry consolidation, dead-code removal, GPU validation, accurate
+documentation, and a fresh set of runnable examples. The public API
+(`discover_circuit`, `evaluate_circuit`, `load_circuit`) is unchanged.
+
+#### Test suite and packaging
+- Fixed the test suite so `pytest tests/` runs cleanly.
+- Corrected the `pytest.ini` section header so pytest discovers its configuration.
+- Relocated test files that had been left inside `src/circuitkit/` into the proper
+  `tests/` tree, so the installed package no longer ships test modules.
+
+#### Algorithm registry consolidation
+- Consolidated every algorithm name, category, and stability tier into a single
+  source of truth: `backends.ALGORITHMS` in `src/circuitkit/backends/__init__.py`.
+  `STABILITY`, `DISCOVERY_ALGORITHMS`, `PRUNING_ALGORITHMS`,
+  `QUANTIZATION_ALGORITHMS`, `STABLE_/EXPERIMENTAL_/RESEARCH_ALGORITHMS`, and the
+  validation registries in `circuitkit.utils.exceptions` are now all derived views
+  of `ALGORITHMS` — no second hand-maintained list.
+
+#### Stability-tier enforcement
+- The 13 discovery algorithms now carry explicit stability tiers
+  (`is_stable`/`is_experimental`/`is_research`, `default_algorithm`): **Stable**
+  (`eap`, `eap-ig`, `eap-ig-activations`, `eap-clean-corrupted`), **Experimental**
+  (`acdc`, `ibcircuit`), **Research** (`eap-exact`, `atp-gd`, `eap-gp`, `relp`,
+  `peap`, `eap-ifr`, `cdt`). `discover_circuit` enforces the tiers at runtime by
+  emitting a `UserWarning` for experimental/research algorithms.
+
+#### CLI discovery-algorithm choices
+- The discovery CLI commands (`discover`, `discover-yaml`, `discover-smart`,
+  `transfer-matrix`) now restrict `--algorithm` to the 13 discovery algorithms
+  (`DISCOVERY_ALGORITHMS`) instead of the full `SUPPORTED_ALGORITHMS` union, which had
+  incorrectly offered pruning/quantization method names as discovery choices.
+
+#### Dead-code removal
+- Removed the superseded `applications/pruning/pruner_legacy.py` and other dead
+  code paths; the active structural pruner is `applications.pruning.pruner`.
+
+#### End-to-end bug fixes (data / discovery / applications)
+- Fixed corruption and data-type issues across the data pipeline (corruption
+  strategy dispatch, dataset-type detection, and tensor dtype mismatches that
+  surfaced on bfloat16 models).
+- Fixed end-to-end bugs spanning data loading, discovery, and the downstream
+  applications so the discover → evaluate → apply workflow runs cleanly on GPT-2.
+
+#### GPU validation
+- Validated the discovery, evaluation, and application pipelines on GPU as well
+  as CPU.
+
+#### Examples
+- Added a fresh set of runnable, CPU-friendly example scripts under `examples/`
+  covering the full workflow: circuit discovery via the Python API, the CLI, and
+  a YAML config; 6-pillar faithfulness evaluation; and each application (pruning,
+  steering, knowledge editing, quantization, finetuning/healing). Each script runs
+  end-to-end on GPT-2. See `examples/README.md`.
+
+#### Documentation corrections
+- `README.md`: rewritten for accuracy — added a stability-tier table, corrected the
+  discovery-algorithm count from an overstated "21" to the actual **13** (the other
+  entries in `STABILITY` are compression selectors/baselines, not discovery
+  algorithms), corrected the built-in task count to **14**, and described the
+  6-pillar faithfulness framework honestly (Pillar 6 / generalization is implemented
+  but not yet validated at scale).
+- `API_REFERENCE.md`: corrected the module path from the non-existent
+  `circuitkit.apply` to `circuitkit.applications`; replaced stale symbol names
+  (`detect_architecture` → `detect_model_architecture`, `ARCHITECTURE_REGISTRY` →
+  `MODEL_ARCH_REGISTRY`, removed the non-existent `register_architecture`); corrected
+  the faithfulness framework from a claimed "7 pillars" to the canonical **6 pillars**
+  with `intervention_reliability` documented as an optional auxiliary pillar; fixed
+  `evaluate_circuit` to reflect its real config shape.
+- `docs/index.rst`: corrected the algorithm count to 13 with stability tiers; replaced
+  the non-existent `circuitkit.apply.*` imports and `circuit_aware_prune` with the
+  real `circuitkit.applications` API.
+- `docs/INSTALLATION.md`: corrected the required Python version to **3.10+** (was
+  listed as 3.9), fixed the verification snippet's import paths, and removed the
+  inaccurate `pip install circuitkit` instruction (not published to PyPI).
+
+## [Unreleased] (draft "0.2.0" — never published)
+
+### Major Features Added
+
+#### Corruption Pipeline (Workstream A)
+- **5+ Corruption Strategies**: Paraphrase, entity swap, distractor, role swap, token swap
+- **CorruptionPipeline Class**: Unified API for applying corruptions to IOI, SVA, and generic tasks
+- **Variant Generation**: Automatic creation of corrupted task variants
+- **Custom Corruption Support**: User-defined corruption functions via callbacks
+- **Integration**: Seamless integration with discovery and evaluation pipelines
+
+#### Generic Task Adapter (Workstream B)
+- **TaskAdapter Framework**: Support for arbitrary custom tasks
+- **Auto-conversion**: Transforms custom tasks to IOI-like format internally
+- **Circuit Discovery**: Full discovery support for custom tasks
+- **Evaluation**: Complete faithfulness evaluation on custom tasks
+- **Built-in Examples**: Sample adapters for domain-specific tasks
+
+#### 6-Pillar Faithfulness Framework (Workstreams C & D)
+- **Pillar 1: Accuracy** - Original model performance baseline
+- **Pillar 2: Sufficiency** - Circuit alone's predictive ability (Workstream C1)
+- **Pillar 3: Necessity** - Ablation impact on performance (Workstreams C2-C4)
+  - Patching-based ablation
+  - Neuron-level ablation
+  - Mixed-layer ablation
+  - Causality tracking
+- **Pillar 4: Robustness** - Performance under corruption variants (Workstream D5)
+  - Robustness under paraphrase
+  - Robustness under entity swaps
+  - Robustness to distribution shifts
+  - Corruption variant comparison
+- **Pillar 5: Compositionality** - Cross-layer component interactions (Workstream D6)
+  - Component relationship analysis
+  - Layer-wise interaction metrics
+  - Compositionality scoring
+  - Circuit dependency graphs
+- **Pillar 6: Generalization** - Transfer across tasks and datasets (Workstream D7)
+  - Cross-task transfer evaluation
+  - Transfer matrix construction (NxN)
+  - Generalization statistics
+  - Domain adaptation metrics
+
+#### Real Pruning & Soft Healing (Workstreams E & F)
+- **StructuralPruner**: Real parameter removal (not just masking)
+  - Attention head removal (W_Q, W_K, W_V, W_O modification)
+  - MLP neuron pruning
+  - Cross-layer consistency
+  - Sparsity measurement
+  - Dry-run mode for safety
+- **SoftHealer**: Learned restoration via LoRA adapters (Workstream E3)
+  - LoRA fine-tuning on pruned models
+  - Automatic adaptation learning
+  - Restoration quality metrics
+  - Efficient parameter updates
+- **Healing Variants**: Multiple restoration strategies (Workstream E4)
+  - Full LoRA healing
+  - Residual-only healing
+  - Selective healing (critical nodes only)
+
+#### Steering Module (Workstream H)
+- **SteeringVectors**: Model behavior manipulation
+  - Vector extraction from circuits
+  - Direction intervention
+  - Multi-head steering
+  - Concept-specific activation
+- **Intervention Control**: Fine-grained behavior adjustment
+  - Magnitude scaling
+  - Direction mixing
+  - Cumulative effect tracking
+
+#### Unified Scores Artifact (Workstream G)
+- **CircuitScores Dataclass**: Standardized node importance schema
+  - Cross-backend compatibility
+  - JSON serialization with versioning
+  - Score normalization (minmax, zscore)
+  - Top-K/bottom-K selection
+- **Backend Integration**: ACDC, EAP, EAP-IG, IBCircuit support
+  - Unified output format
+  - Backward compatibility with .pt format
+  - Extensible for new algorithms
+
+#### Benchmarking Suite (Workstream I)
+- **LM Evaluation Harness Integration**: 100+ benchmark tasks
+  - GSM8K (math reasoning)
+  - MMLU (general knowledge, 57 subjects)
+  - TruthfulQA (truthfulness)
+  - HumanEval (code generation)
+  - HellaSwag (commonsense reasoning)
+  - Additional benchmarks via lm-eval
+- **Automated Benchmarking**: End-to-end evaluation pipelines
+  - Batch processing
+  - Memory-efficient evaluation
+  - Comprehensive result aggregation
+  - Performance comparison (original vs. pruned)
+- **Benchmark CLI**: Command-line evaluation interface
+  - Task selection
+  - Limit parameters
+  - Output formatting
+
+#### Circuit Analysis & Visualization (Workstream J)
+- **Circuit Analysis Tools**: Understanding discovered circuits
+  - Node importance ranking
+  - Component visualization
+  - Dependency graph generation
+  - Circuit statistics and summaries
+- **Visualization Library**: Rich graphical outputs
+  - Plotly interactive plots
+  - Matplotlib static figures
+  - Network graphs
+  - Heatmaps and distributions
+  - Custom visualization framework
+
+#### Memory Optimization (Workstream K)
+- **Smart Model Loading**: Automatic device and precision selection
+  - GPU availability detection
+  - Precision optimization (float32, float16, bfloat16)
+  - Batch size auto-tuning
+- **Memory Monitoring**: Real-time resource tracking
+  - GPU memory usage
+  - CPU memory tracking
+  - Swap usage monitoring
+  - Peak memory reporting
+- **Efficiency Features**: Reduced memory footprint
+  - Gradient checkpointing
+  - Mixed-precision training
+  - Activation recomputation
+  - Batch processing optimization
+
+### New Modules
+
+- `circuitkit.corruption`: Corruption pipeline and strategies
+- `circuitkit.apply`: Pruning, healing, and steering implementations
+- `circuitkit.artifacts`: Unified scores and artifact management
+- `circuitkit.evaluation`: Comprehensive faithfulness metrics
+- `circuitkit.analysis`: Circuit analysis and properties
+
+### API Enhancements
+
+#### CLI Commands
+- `discover-smart`: Memory-aware discovery with auto-configuration
+- Enhanced `discover`: Support for corruption and custom tasks
+- Enhanced `evaluate`: Faithfulness and benchmark evaluation
+- `list-models`: Model information and capabilities
+- `check-memory`: Memory requirement estimation
+
+#### Python API
+
+```python
+# Discovery
+from circuitkit.api import discover_circuit
+
+# Evaluation with 6 pillars
+from circuitkit.evaluation import (
+    evaluate_circuit,
+    Pillar1_Accuracy, Pillar2_Sufficiency, Pillar3_Necessity,
+    Pillar4_Robustness, Pillar5_Compositionality, Pillar6_Generalization
+)
+
+# Interventions
+from circuitkit.apply import (
+    StructuralPruner, SoftHealer, SteeringVectors
+)
+
+# Corruptions
+from circuitkit.corruption import CorruptionPipeline
+
+# Artifacts
+from circuitkit.artifacts import CircuitScores
+
+# Analysis
+from circuitkit.analysis import CircuitAnalyzer
+```
+
+### Backward Compatibility
+
+- All v0.1 APIs remain functional
+- Legacy .pt artifact format still supported
+- Existing discovery code unchanged
+- New features are opt-in
+
+### Documentation
+
+- Comprehensive README with v0.2 features
+- FEATURES.md: Complete feature matrix
+- INSTALLATION.md: Dependency groups and scenarios
+- CONTRIBUTING.md: Development guidelines
+- CITATION.cff: Academic citation format
+- Tutorial notebooks for major features
+- API documentation
+- Extensive examples and use cases
+
+### Testing
+
+- 100+ new unit tests
+- Integration test coverage for all workstreams
+- CI/CD pipeline setup
+- Automated testing on Python 3.9+
+
+### Dependencies
+
+- Added: `torch-pruning>=1.0` (structural pruning)
+- Added: `spacy>=3.7` (optional, for text corruption)
+- Added: `lm-eval` (optional, for benchmarking)
+- Updated: `transformers>=4.52.3` (latest features)
+- Updated: `transformer-lens` (pinned to stable commit)
+
+### Internal Changes
+
+- Refactored discovery API for extensibility
+- Improved error handling and logging
+- Enhanced type hints across codebase
+- Standardized metric computation
+- Optimized memory usage
+
+### Bug Fixes
+
+- Fixed edge cases in circuit scoring
+- Improved numerical stability in normalization
+- Better error messages for common issues
+- Resolved platform compatibility issues
+
+### Performance Improvements
+
+- 2-3x faster discovery with EAP-IG
+- Reduced memory footprint for large models
+- Optimized artifact serialization
+- Faster evaluation with batch processing
+
+---
+
+## [0.1.0] - 2025-01-15
+
+### Initial Release
+
+#### Core Features
+- ACDC circuit discovery algorithm
+- EAP-IG node-level circuit discovery
+- IOI, SVA, and basic task support
+- CLI interface
+- Model evaluation
+- LM Evaluation Harness integration
+
+#### Included Algorithms
+- ACDC (patching-based)
+- EAP (edge attribution)
+- EAP-IG (integrated gradients variant)
+
+#### Supported Tasks
+- IOI (Indirect Object Identification)
+- SVA (Subject-Verb Agreement)
+- Gender Bias
+- Capital-Country
+- Hypernymy
+- Greater Than
+- MMLU (via lm-eval)
+
+#### API
+- `discover_circuit()`: Main discovery function
+- `evaluate_circuit()`: Basic performance evaluation
+- CLI: `circuitkit discover`, `circuitkit evaluate`
+
+#### Testing & Documentation
+- Basic unit tests
+- CLI documentation
+- Example notebooks
+
+---
+
+## Versioning Policy
+
+CircuitKIT follows [Semantic Versioning](https://semver.org/):
+- **MAJOR** (0.X.0): Breaking API changes
+- **MINOR** (.0.X): New features, backward compatible
+- **PATCH** (.0.0.X): Bug fixes, backward compatible
+
+---
+
+## Support & Contributions
+
+For issues, questions, or contributions:
+- **Issues**: [GitHub Issues](https://github.com/Lexsi-Labs/circuitkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Lexsi-Labs/circuitkit/discussions)
+- **Contributing**: See [CONTRIBUTING.md](https://github.com/Lexsi-Labs/CircuitKIT/blob/main/CONTRIBUTING.md)
+
+---
+
+## Acknowledgments
+
+CircuitKIT builds on pioneering work in mechanistic interpretability:
+- ACDC by Conmy et al.
+- Integrated Gradients by Sundararajan et al.
+- TransformerLens by Nanda et al.
+- And the broader open-source ML community
+
+---
+
+**Created**: 2026-04-13  
+**Latest Update**: 2026-05-16  
+**Version**: 1.0.0

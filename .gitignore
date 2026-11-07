@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv
+.venv/
+CircuitKIT/.venv
+CircuitKIT/.venv/
+env/
+venv/
+ENV/
+
+# Large model weights and checkpoints (> 50MB)
+*.safetensors
+*.bin
+**/checkpoint/model*
+**/checkpoints/
+
+# Cache and logs
+cache/
+logs/
+CircuitKIT/cache/
+CircuitKIT/logs/
+.pytest_cache/
+.mypy_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp

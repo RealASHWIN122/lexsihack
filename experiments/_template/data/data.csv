@@ -1,0 +1,5 @@
+prompt,answer,corrupted_prompt,corrupted_answer
+"The apple is on the"," table","The apple is under the"," chair"
+"The sun rises in the"," east","The sun sets in the"," west"
+"Water freezes into"," ice","Water boils into"," steam"
+"Birds fly in the"," sky","Fish swim in the"," ocean"

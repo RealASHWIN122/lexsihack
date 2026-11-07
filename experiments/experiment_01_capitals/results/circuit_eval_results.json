@@ -1,0 +1,12 @@
+{
+  "task": "ioi",
+  "model": "gpt2",
+  "algorithm": "eap-ig",
+  "patching_score": 1.0,
+  "ablation_score": 0.0,
+  "total_time_seconds": 178.3,
+  "clean_metric": 1.375,
+  "corrupt_metric": -0.4375,
+  "patched_metric": 1.5625,
+  "ablated_metric": -0.7578
+}

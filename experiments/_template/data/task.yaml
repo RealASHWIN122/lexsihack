@@ -1,0 +1,10 @@
+name: my_experiment_task
+source:
+  type: csv
+  path: data/data.csv
+schema:
+  prompt: prompt
+  answer: answer
+  corrupted_prompt: corrupted_prompt
+  corrupted_answer: corrupted_answer
+metric: logit_diff

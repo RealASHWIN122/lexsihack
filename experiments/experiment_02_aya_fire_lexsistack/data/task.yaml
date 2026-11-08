@@ -1,0 +1,10 @@
+name: aya_fire_safety_task
+source:
+  type: csv
+  path: data/data.csv
+schema:
+  prompt: clean_prompt
+  answer: clean_answer
+  corrupted_prompt: corrupted_prompt
+  corrupted_answer: corrupted_answer
+metric: logit_diff

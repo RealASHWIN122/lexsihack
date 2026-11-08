@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aya-Fire Safety Circuit Visualization</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 24px; }
+        h1 { color: #58a6ff; font-size: 20px; margin-bottom: 8px; }
+        p { color: #8b949e; font-size: 14px; max-width: 800px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-top: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+        .node { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 12px; transition: transform 0.2s; }
+        .node:hover { transform: translateY(-2px); border-color: #58a6ff; }
+        .node-layer { font-family: monospace; font-size: 13px; color: #f0883e; font-weight: 600; }
+        .node-module { font-family: monospace; font-size: 11px; color: #8b949e; margin: 4px 0; }
+        .node-score { font-size: 12px; color: #7ee787; font-weight: 600; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #238636; color: white; }
+    </style>
+</head>
+<body>
+    <h1>CircuitKIT Safety Attribution Graph: Cohere2 (Aya-Fire)</h1>
+    <p>Identified causal subnetwork of 11 intermediate MLP layers responsible for safety refusal features. The Lexsi C-ΔΘ intervention targets these layers to align multilingual refusal without altering tokenizer or baseline architecture.</p>
+    
+    <div class="card">
+        <span class="badge">Discovered Circuit Nodes (Top Importance)</span>
+        <div class="grid">
+            <div class="node">
+                <div class="node-layer">Layer 16</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.630</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 17</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.700</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 18</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.740</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 19</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.810</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 20</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.880</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 21</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.920</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 22</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.870</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 23</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.820</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 24</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.740</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 25</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.690</div>
+            </div>
+            <div class="node">
+                <div class="node-layer">Layer 26</div>
+                <div class="node-module">mlp.down_proj</div>
+                <div class="node-score">Attribution: 0.640</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

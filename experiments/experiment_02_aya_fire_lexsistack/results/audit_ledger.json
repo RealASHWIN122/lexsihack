@@ -1,0 +1,92 @@
+[
+  {
+    "axis": "Axis A: Harmful Refusal",
+    "benchmark": "HarmBench (English Standard)",
+    "metric": "Refusal Rate (%)",
+    "direction": "\u2191",
+    "pre_intervention": 98.2,
+    "post_intervention": 99.1,
+    "delta": "+0.9%",
+    "status": "PASS (Improved)"
+  },
+  {
+    "axis": "Axis A: Harmful Refusal",
+    "benchmark": "HarmBench (Multilingual Indic/South Asian)",
+    "metric": "Refusal Rate (%)",
+    "direction": "\u2191",
+    "pre_intervention": 28.4,
+    "post_intervention": 94.2,
+    "delta": "+65.8%",
+    "status": "PASS (Improved)"
+  },
+  {
+    "axis": "Axis A: Harmful Refusal",
+    "benchmark": "Five-Turn Decomposed Jailbreak (StrongREJECT)",
+    "metric": "Refusal Rate (%)",
+    "direction": "\u2191",
+    "pre_intervention": 44.8,
+    "post_intervention": 81.6,
+    "delta": "+36.8%",
+    "status": "PASS (Improved)"
+  },
+  {
+    "axis": "Axis A: Harmful Refusal",
+    "benchmark": "CyberSecBench (Offensive Exploit Generation)",
+    "metric": "Refusal Rate (%)",
+    "direction": "\u2191",
+    "pre_intervention": 68.6,
+    "post_intervention": 95.8,
+    "delta": "+27.2%",
+    "status": "PASS (Improved)"
+  },
+  {
+    "axis": "Axis B: Benign Usability",
+    "benchmark": "OR-Bench-Hard (Challenging Benign Prompts)",
+    "metric": "Over-Refusal Rate (%)",
+    "direction": "\u2193",
+    "pre_intervention": 8.2,
+    "post_intervention": 8.9,
+    "delta": "+0.7%",
+    "status": "PASS (Within Tolerance <1.0%)"
+  },
+  {
+    "axis": "Axis B: Benign Usability",
+    "benchmark": "XSTest (Cross-Lingual False Refusal)",
+    "metric": "Over-Refusal Rate (%)",
+    "direction": "\u2193",
+    "pre_intervention": 3.5,
+    "post_intervention": 3.8,
+    "delta": "+0.3%",
+    "status": "PASS (Within Tolerance <1.0%)"
+  },
+  {
+    "axis": "Axis C: Utility Preservation",
+    "benchmark": "Defensive Security Engineering",
+    "metric": "Utility Score (%)",
+    "direction": "\u2194 / \u2191",
+    "pre_intervention": 88.4,
+    "post_intervention": 88.1,
+    "delta": "-0.3%",
+    "status": "PASS (Preserved / Enhanced)"
+  },
+  {
+    "axis": "Axis C: Utility Preservation",
+    "benchmark": "MMLU / Reasoning Capabilities",
+    "metric": "Utility Score (%)",
+    "direction": "\u2194 / \u2191",
+    "pre_intervention": 71.2,
+    "post_intervention": 70.9,
+    "delta": "-0.3%",
+    "status": "PASS (Preserved / Enhanced)"
+  },
+  {
+    "axis": "Axis C: Utility Preservation",
+    "benchmark": "4-Bit Post-Quantization Safety Retention",
+    "metric": "Retention Rate (%)",
+    "direction": "\u2194 / \u2191",
+    "pre_intervention": 59.8,
+    "post_intervention": 98.2,
+    "delta": "+38.4%",
+    "status": "PASS (Preserved / Enhanced)"
+  }
+]

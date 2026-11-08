@@ -1,0 +1,36 @@
+{
+  "model": "CohereLabs/tiny-aya-fire",
+  "architecture": "cohere2",
+  "parameters": "3.35B",
+  "intervention": {
+    "algorithm": "C-\u0394\u0398 (Circuit-Restricted Weight Arithmetic)",
+    "alpha": 0.42,
+    "layers_modified": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "modules_modified": [
+      "mlp.down_proj",
+      "mlp.gate_proj"
+    ],
+    "parameter_fraction_modified": 0.1375,
+    "orthogonal_basis": "contrastive_refusal_projection",
+    "timestamp": "2026-11-07T19:57:51Z"
+  },
+  "summary": {
+    "multilingual_safety_jump": "+65.8%",
+    "five_turn_jailbreak_resilience": "+36.8%",
+    "exploit_compliance_reduction": "-27.2%",
+    "quantization_safety_retention": "+38.4%",
+    "general_utility_impact": "-0.3% (negligible)"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "or_bench_hard_1k": 1319,
+  "or_bench_toxic": 655,
+  "multijail_10lang": 3150,
+  "wmdp": {
+    "wmdp-cyber": 1987,
+    "wmdp-bio": 1273,
+    "wmdp-chem": 408
+  },
+  "xstest_safe": 250,
+  "xstest_total": 450,
+  "ifeval": 541,
+  "truthfulqa": 817,
+  "advbench_harmbench": 983,
+  "cybersec_defensive_10_tasks": 10,
+  "disjoint_correction_pairs": 8
+}

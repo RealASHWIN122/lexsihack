@@ -1,0 +1,14 @@
+{
+  "aligntune": {
+    "version": "0.1.32",
+    "role_in_stack": "Post-training and alignment runs (SFT, DPO, PPO, GRPO)",
+    "used_in_these_two_repairs": false,
+    "reason": "Section 02.2: 'Part of the stack; not needed for these two repairs, which retrain nothing.'"
+  },
+  "mansu": {
+    "paper": "arXiv:2605.15138 (Forgetting That Sticks: Quantization-Permanent Unlearning via Circuit Attribution)",
+    "role_in_stack": "Removes hazardous knowledge in a way that holds after 4-bit quantization",
+    "used_in_these_two_repairs": false,
+    "reason": "Section 02.2: 'Part of the stack; not used here, since neither repair targets knowledge removal and the WMDP rows are preserved.' (WMDP-cyber 75.7 -> 75.0 / 74.4: Knowledge stays; willingness changes.)"
+  }
+}

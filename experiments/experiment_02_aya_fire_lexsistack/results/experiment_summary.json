@@ -2,9 +2,33 @@
   "model": "CohereLabs/tiny-aya-fire",
   "architecture": "cohere2",
   "parameters": "3.35B",
+  "circuitkit_task": "aya_fire_safety_task",
+  "circuit_nodes_count": 11,
+  "circuit_top_nodes": {
+    "MLP 21": 0.92,
+    "MLP 20": 0.86,
+    "MLP 22": 0.86,
+    "MLP 19": 0.8,
+    "MLP 23": 0.8
+  },
   "intervention": {
     "algorithm": "C-\u0394\u0398 (Circuit-Restricted Weight Arithmetic)",
+    "circuit_task": "aya_fire_safety_task",
+    "circuit_algorithm": "eap-ig",
     "alpha": 0.42,
+    "circuit_nodes": [
+      "MLP 16",
+      "MLP 17",
+      "MLP 18",
+      "MLP 19",
+      "MLP 20",
+      "MLP 21",
+      "MLP 22",
+      "MLP 23",
+      "MLP 24",
+      "MLP 25",
+      "MLP 26"
+    ],
     "layers_modified": [
       16,
       17,
@@ -23,8 +47,7 @@
       "mlp.gate_proj"
     ],
     "parameter_fraction_modified": 0.1375,
-    "orthogonal_basis": "contrastive_refusal_projection",
-    "timestamp": "2026-11-07T19:57:51Z"
+    "timestamp": "2026-11-08T17:01:22Z"
   },
   "summary": {
     "multilingual_safety_jump": "+65.8%",

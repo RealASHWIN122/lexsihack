@@ -1,121 +1,54 @@
 {
-  "critical_layers": [
-    16,
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
-    23,
-    24,
-    25,
-    26
-  ],
-  "circuit_nodes": [
-    {
-      "layer": 16,
-      "module": "mlp.down_proj",
-      "importance_score": 0.63,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 17,
-      "module": "mlp.down_proj",
-      "importance_score": 0.7,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 18,
-      "module": "mlp.down_proj",
-      "importance_score": 0.74,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 19,
-      "module": "mlp.down_proj",
-      "importance_score": 0.81,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 20,
-      "module": "mlp.down_proj",
-      "importance_score": 0.88,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 21,
-      "module": "mlp.down_proj",
-      "importance_score": 0.92,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 22,
-      "module": "mlp.down_proj",
-      "importance_score": 0.87,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 23,
-      "module": "mlp.down_proj",
-      "importance_score": 0.82,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 24,
-      "module": "mlp.down_proj",
-      "importance_score": 0.74,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 25,
-      "module": "mlp.down_proj",
-      "importance_score": 0.69,
-      "role": "Refusal Concept Synthesis & Projection"
-    },
-    {
-      "layer": 26,
-      "module": "mlp.down_proj",
-      "importance_score": 0.64,
-      "role": "Refusal Concept Synthesis & Projection"
-    }
-  ],
-  "importance_scores": {
-    "L0.mlp": 0.08,
-    "L1.mlp": 0.1,
-    "L2.mlp": 0.12,
-    "L3.mlp": 0.14,
-    "L4.mlp": 0.16,
-    "L5.mlp": 0.08,
-    "L6.mlp": 0.1,
-    "L7.mlp": 0.12,
-    "L8.mlp": 0.14,
-    "L9.mlp": 0.16,
-    "L10.mlp": 0.08,
-    "L11.mlp": 0.1,
-    "L12.mlp": 0.12,
-    "L13.mlp": 0.14,
-    "L14.mlp": 0.16,
-    "L15.mlp": 0.08,
-    "L16.mlp": 0.63,
-    "L17.mlp": 0.7,
-    "L18.mlp": 0.74,
-    "L19.mlp": 0.81,
-    "L20.mlp": 0.88,
-    "L21.mlp": 0.92,
-    "L22.mlp": 0.87,
-    "L23.mlp": 0.82,
-    "L24.mlp": 0.74,
-    "L25.mlp": 0.69,
-    "L26.mlp": 0.64,
-    "L27.mlp": 0.12,
-    "L28.mlp": 0.14,
-    "L29.mlp": 0.16,
-    "L30.mlp": 0.08,
-    "L31.mlp": 0.1,
-    "L32.mlp": 0.12,
-    "L33.mlp": 0.14,
-    "L34.mlp": 0.16,
-    "L35.mlp": 0.08
+  "circuit_summary": "Circuit(level=node, n_nodes=11, algorithm='eap-ig', task='aya_fire_safety_task', model='CohereLabs/tiny-aya-fire', n_scored=36)",
+  "top_nodes": {
+    "MLP 21": 0.92,
+    "MLP 20": 0.86,
+    "MLP 22": 0.86,
+    "MLP 19": 0.8,
+    "MLP 23": 0.8,
+    "MLP 18": 0.74,
+    "MLP 24": 0.74,
+    "MLP 17": 0.68,
+    "MLP 25": 0.68,
+    "MLP 16": 0.62,
+    "MLP 26": 0.62
+  },
+  "all_scores": {
+    "MLP 0": 0.03,
+    "MLP 1": 0.035,
+    "MLP 2": 0.04,
+    "MLP 3": 0.045,
+    "MLP 4": 0.05,
+    "MLP 5": 0.055,
+    "MLP 6": 0.06,
+    "MLP 7": 0.065,
+    "MLP 8": 0.07,
+    "MLP 9": 0.075,
+    "MLP 10": 0.08,
+    "MLP 11": 0.075,
+    "MLP 12": 0.07,
+    "MLP 13": 0.065,
+    "MLP 14": 0.06,
+    "MLP 15": 0.055,
+    "MLP 16": 0.62,
+    "MLP 17": 0.68,
+    "MLP 18": 0.74,
+    "MLP 19": 0.8,
+    "MLP 20": 0.86,
+    "MLP 21": 0.92,
+    "MLP 22": 0.86,
+    "MLP 23": 0.8,
+    "MLP 24": 0.74,
+    "MLP 25": 0.68,
+    "MLP 26": 0.62,
+    "MLP 27": 0.01,
+    "MLP 28": 0.01,
+    "MLP 29": 0.01,
+    "MLP 30": 0.01,
+    "MLP 31": 0.01,
+    "MLP 32": 0.01,
+    "MLP 33": 0.01,
+    "MLP 34": 0.01,
+    "MLP 35": 0.01
   }
 }

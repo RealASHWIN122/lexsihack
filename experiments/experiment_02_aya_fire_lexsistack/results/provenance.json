@@ -1,0 +1,48 @@
+{
+  "schema": "lexsi.provenance/1",
+  "library": "safetune",
+  "version": "0.1.13",
+  "git_sha": null,
+  "created_at": "2026-11-08T11:45:58Z",
+  "base_model": "CohereLabs/tiny-aya-fire",
+  "method": "circuit_restricted_weight_arithmetic",
+  "inputs": [
+    "data/data.csv",
+    "data/task.yaml"
+  ],
+  "params": {
+    "circuit_nodes": [
+      "MLP 16",
+      "MLP 17",
+      "MLP 18",
+      "MLP 19",
+      "MLP 20",
+      "MLP 21",
+      "MLP 22",
+      "MLP 23",
+      "MLP 24",
+      "MLP 25",
+      "MLP 26"
+    ],
+    "target_layers": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "target_modules": [
+      "mlp.down_proj",
+      "mlp.gate_proj"
+    ],
+    "steering_alpha": 0.75,
+    "orthogonal_projection": true,
+    "cross_lingual_decoupling": true
+  }
+}

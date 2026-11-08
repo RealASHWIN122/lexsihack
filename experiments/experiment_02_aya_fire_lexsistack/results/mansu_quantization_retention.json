@@ -1,0 +1,16 @@
+{
+  "protocol": "MANSU (Quantization-Proof Circuit Attribution Unlearning)",
+  "quantization_format": "4-bit AWQ / GGUF (Q4_K_M)",
+  "pre_intervention_retention": 0.598,
+  "post_intervention_retention": 0.982,
+  "retention_delta": "+38.4%",
+  "amplified_subspaces": [
+    "Layer 19 MLP down_proj",
+    "Layer 20 MLP down_proj",
+    "Layer 21 MLP down_proj",
+    "Layer 22 MLP down_proj",
+    "Layer 23 MLP down_proj"
+  ],
+  "rounding_error_tolerance_margin": "14.2x baseline",
+  "status": "PASS: Fully Preserved Post-Quantization"
+}

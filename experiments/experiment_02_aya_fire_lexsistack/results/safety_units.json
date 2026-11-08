@@ -1,0 +1,59 @@
+{
+  "safety_units": {
+    "layer_indices": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "module_names": [
+      "mlp.down_proj",
+      "mlp.gate_proj"
+    ],
+    "unit_ids": [
+      "MLP 16",
+      "MLP 17",
+      "MLP 18",
+      "MLP 19",
+      "MLP 20",
+      "MLP 21",
+      "MLP 22",
+      "MLP 23",
+      "MLP 24",
+      "MLP 25",
+      "MLP 26"
+    ],
+    "metadata": {
+      "model": "CohereLabs/tiny-aya-fire",
+      "method": "eap-ig"
+    }
+  },
+  "layer_suggestions": {
+    "target_modules": [
+      "mlp.down_proj"
+    ],
+    "layer_subset": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "priority": {
+      "mlp.down_proj": 1.0
+    }
+  }
+}

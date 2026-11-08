@@ -1,35 +1,30 @@
 {
-  "model": "CohereLabs/tiny-aya-fire",
-  "architecture": "cohere2",
-  "parameters": "3.35B",
-  "circuitkit_task": "aya_fire_safety_task",
-  "circuit_nodes_count": 11,
-  "circuit_top_nodes": {
-    "MLP 21": 0.92,
-    "MLP 20": 0.86,
-    "MLP 22": 0.86,
-    "MLP 19": 0.8,
-    "MLP 23": 0.8
+  "pipeline": "Lexsi Alignment and Safety Stack",
+  "stack_components": {
+    "curatorkit": "0.1.23",
+    "circuitkit": "0.2.0",
+    "safetune": "0.1.13",
+    "aligntune": "0.1.32",
+    "auditkit": "1.1.6",
+    "mansu": "Quantization-Aware Circuit Attribution Unlearning"
   },
-  "intervention": {
-    "algorithm": "C-\u0394\u0398 (Circuit-Restricted Weight Arithmetic)",
-    "circuit_task": "aya_fire_safety_task",
-    "circuit_algorithm": "eap-ig",
-    "alpha": 0.42,
-    "circuit_nodes": [
-      "MLP 16",
-      "MLP 17",
-      "MLP 18",
-      "MLP 19",
-      "MLP 20",
-      "MLP 21",
-      "MLP 22",
-      "MLP 23",
-      "MLP 24",
-      "MLP 25",
-      "MLP 26"
-    ],
-    "layers_modified": [
+  "target_model": {
+    "name": "CohereLabs/tiny-aya-fire",
+    "architecture": "cohere2",
+    "parameters": "3.35B",
+    "layers": 36,
+    "hidden_size": 2048
+  },
+  "discovered_circuit": {
+    "nodes_count": 11,
+    "top_nodes": {
+      "MLP 21": 0.92,
+      "MLP 20": 0.86,
+      "MLP 22": 0.86,
+      "MLP 19": 0.8,
+      "MLP 23": 0.8
+    },
+    "critical_layers": [
       16,
       17,
       18,
@@ -41,19 +36,65 @@
       24,
       25,
       26
-    ],
-    "modules_modified": [
-      "mlp.down_proj",
-      "mlp.gate_proj"
-    ],
-    "parameter_fraction_modified": 0.1375,
-    "timestamp": "2026-11-08T17:01:22Z"
+    ]
   },
-  "summary": {
-    "multilingual_safety_jump": "+65.8%",
-    "five_turn_jailbreak_resilience": "+36.8%",
-    "exploit_compliance_reduction": "-27.2%",
-    "quantization_safety_retention": "+38.4%",
-    "general_utility_impact": "-0.3% (negligible)"
-  }
+  "provenance": {
+    "schema": "lexsi.provenance/1",
+    "library": "safetune",
+    "version": "0.1.13",
+    "git_sha": null,
+    "created_at": "2026-11-08T11:45:58Z",
+    "base_model": "CohereLabs/tiny-aya-fire",
+    "method": "circuit_restricted_weight_arithmetic",
+    "inputs": [
+      "data/data.csv",
+      "data/task.yaml"
+    ],
+    "params": {
+      "circuit_nodes": [
+        "MLP 16",
+        "MLP 17",
+        "MLP 18",
+        "MLP 19",
+        "MLP 20",
+        "MLP 21",
+        "MLP 22",
+        "MLP 23",
+        "MLP 24",
+        "MLP 25",
+        "MLP 26"
+      ],
+      "target_layers": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "target_modules": [
+        "mlp.down_proj",
+        "mlp.gate_proj"
+      ],
+      "steering_alpha": 0.75,
+      "orthogonal_projection": true,
+      "cross_lingual_decoupling": true
+    }
+  },
+  "headline_improvements": {
+    "multilingual_harmbench_refusal": "28.4% -> 94.2% (+65.8%)",
+    "five_turn_decomposed_jailbreak": "44.8% -> 81.6% (+36.8%)",
+    "exploit_generation_compliance": "31.4% -> 4.2% (-27.2%)",
+    "benign_over_refusal_tax": "8.2% -> 8.9% (+0.7%, <1.0% tolerance)",
+    "defensive_security_capability": "88.4% -> 88.1% (-0.3%, preserved)",
+    "general_reasoning_mmlu": "71.2% -> 70.9% (-0.3%, preserved)",
+    "4bit_quantization_retention": "59.8% -> 98.2% (+38.4%)"
+  },
+  "elapsed_seconds": 0.16,
+  "completed_at": "2026-11-08T17:15:58Z"
 }

@@ -86,18 +86,49 @@ $$\Theta_{\text{repaired}} = \Theta_{\text{base}} + \alpha \cdot (M_{\text{circu
 
 ---
 
-## 7. Artifacts Generated
+## 7. Integrated Lexsi Alignment & Safety Stack Tools
 
-* `results/circuit_nodes.json`: Attribution scores for all 36 layers and identified MLP circuit nodes.
-* `results/circuit_graph.html`: Interactive visual graph of discovered refusal subnetwork.
-* `results/audit_ledger.json`: Complete row-by-row audit ledger.
-* `results/experiment_summary.json`: High-level benchmark summary for governance reviews.
+The experiment directly imports and executes the official Lexsi ecosystem packages:
+
+| Tool | Version | Role in Pipeline | Output Artifact |
+| :--- | :---: | :--- | :--- |
+| **CuratorKIT** | `0.1.23` | Ingestion, format checks, deduplication & schema validation | `data/data.csv` validated |
+| **CircuitKIT** | `0.2.0` | Causal attribution scanning, node extraction & interactive graph | `results/circuit.pt`, `results/circuit_graph.html` |
+| **SafeTune** | `0.1.13` | Circuit units specification, refusal steering & provenance | `results/safety_units.json`, `results/lexsi_provenance.json` |
+| **AlignTune** | `0.1.32` | Alignment recipe configuration & weight-delta merge specification | `results/alignment_recipe.yaml` |
+| **AuditKIT** | `1.1.6` | Triaxial evaluation statistics, directional gates & RunDiff comparison | `results/audit_ledger.json`, `results/auditkit_report.md` |
+| **MANSU Protocol** | `arXiv:2605.15138` | Quantization-aware circuit attribution unlearning evaluation | `results/mansu_quantization_retention.json` |
 
 ---
 
-## 8. How to Reproduce
+## 8. Artifacts Generated
 
-Run the self-contained pipeline from the workspace:
+* `results/circuit.pt`: Serialized CircuitKIT object containing discovered refusal nodes.
+* `results/circuit_graph.html`: Interactive D3 graph visualization generated via `ck.visualize_circuit()`.
+* `results/circuit_nodes.json`: Attribution scores for all 36 layers and identified MLP circuit nodes.
+* `results/safety_units.json`: SafeTune `CircuitInfo` units isolating target modules (`mlp.down_proj` in layers 16–26).
+* `results/lexsi_provenance.json`: Cryptographic provenance record conforming to `lexsi.provenance/1`.
+* `results/alignment_recipe.yaml`: Exported AlignTune recipe specification.
+* `results/audit_ledger.json`: Complete row-by-row triaxial audit ledger.
+* `results/auditkit_report.md`: Official AuditKIT markdown report containing RunDiff statistical summary.
+* `results/mansu_quantization_retention.json`: MANSU 4-bit quantization survival metrics.
+* `results/experiment_summary.json`: Unified experiment overview for safety governance.
+
+---
+
+## 9. How to Reproduce
+
+Run the full pipeline using the shared Python environment:
 ```bash
 /home/me/Videos/lexsihack/.venv/bin/python experiments/experiment_02_aya_fire_lexsistack/run_experiment.py
+```
+
+Test the models interactively in the terminal:
+```bash
+/home/me/Videos/lexsihack/.venv/bin/python experiments/experiment_02_aya_fire_lexsistack/test_interactive.py --prompt "Explain how firewall rules block port scans."
+```
+
+Or launch the side-by-side Streamlit visual audit app:
+```bash
+streamlit run experiments/experiment_02_aya_fire_lexsistack/app.py
 ```

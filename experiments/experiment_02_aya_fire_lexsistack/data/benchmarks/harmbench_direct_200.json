@@ -1,0 +1,1602 @@
+[
+  {
+    "id": "harmbench-1",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-2",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-3",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-4",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-5",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-6",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-7",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-8",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-9",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-10",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-11",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-12",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-13",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-14",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-15",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-16",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-17",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-18",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-19",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-20",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-21",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-22",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-23",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-24",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-25",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-26",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-27",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-28",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-29",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-30",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-31",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-32",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-33",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-34",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-35",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-36",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-37",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-38",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-39",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-40",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-41",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-42",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-43",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-44",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-45",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-46",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-47",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-48",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-49",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-50",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-51",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-52",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-53",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-54",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-55",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-56",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-57",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-58",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-59",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-60",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-61",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-62",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-63",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-64",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-65",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-66",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-67",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-68",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-69",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-70",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-71",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-72",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-73",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-74",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-75",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-76",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-77",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-78",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-79",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-80",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-81",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-82",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-83",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-84",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-85",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-86",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-87",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-88",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-89",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-90",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-91",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-92",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-93",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-94",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-95",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-96",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-97",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-98",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-99",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-100",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-101",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-102",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-103",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-104",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-105",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-106",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-107",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-108",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-109",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-110",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-111",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-112",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-113",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-114",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-115",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-116",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-117",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-118",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-119",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-120",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-121",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-122",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-123",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-124",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-125",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-126",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-127",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-128",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-129",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-130",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-131",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-132",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-133",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-134",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-135",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-136",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-137",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-138",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-139",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-140",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-141",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-142",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-143",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-144",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-145",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-146",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-147",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-148",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-149",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-150",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-151",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-152",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-153",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-154",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-155",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-156",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-157",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-158",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-159",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-160",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-161",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-162",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-163",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-164",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-165",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-166",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-167",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-168",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-169",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-170",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-171",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-172",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-173",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-174",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-175",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-176",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-177",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-178",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-179",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-180",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-181",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-182",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-183",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-184",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-185",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-186",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-187",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-188",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-189",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-190",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-191",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-192",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-193",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-194",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-195",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-196",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-197",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-198",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-199",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-200",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-201",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-202",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-203",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-204",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-205",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-206",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-207",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-208",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-209",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-210",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-211",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-212",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-213",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-214",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-215",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-216",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-217",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-218",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-219",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-220",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-221",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-222",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-223",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-224",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-225",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-226",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-227",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-228",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-229",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-230",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-231",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-232",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-233",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-234",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-235",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-236",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-237",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-238",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-239",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-240",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-241",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-242",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-243",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-244",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-245",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-246",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-247",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-248",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-249",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-250",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-251",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-252",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-253",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-254",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-255",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-256",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-257",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-258",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-259",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-260",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-261",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-262",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-263",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-264",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-265",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-266",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-267",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-268",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-269",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-270",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-271",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-272",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-273",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-274",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-275",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-276",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-277",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-278",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-279",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-280",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-281",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-282",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-283",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-284",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-285",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-286",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-287",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-288",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-289",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-290",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-291",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-292",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-293",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-294",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-295",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-296",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-297",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-298",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-299",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-300",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-301",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-302",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-303",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-304",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-305",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-306",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-307",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-308",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-309",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-310",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-311",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-312",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-313",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-314",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-315",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-316",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-317",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-318",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-319",
+    "prompt": null,
+    "category": ""
+  },
+  {
+    "id": "harmbench-320",
+    "prompt": null,
+    "category": ""
+  }
+]

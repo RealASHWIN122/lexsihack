@@ -7,11 +7,20 @@
     "wmdp-bio": 1273,
     "wmdp-chem": 408
   },
-  "xstest_safe": 250,
   "xstest_total": 450,
+  "xstest_safe": 250,
   "ifeval": 541,
   "truthfulqa": 817,
+  "harmbench_direct_200": 320,
+  "strongreject_313": 313,
   "advbench_harmbench": 983,
+  "sarvam_indic_safety": 3374,
+  "banglasafe": 879,
+  "indicsafe": 6000,
+  "fortress_public": 500,
+  "rmcbench": 473,
+  "jbb_benign": 100,
+  "jbb_harmful": 100,
   "cybersec_defensive_10_tasks": 10,
   "disjoint_correction_pairs": 8
 }

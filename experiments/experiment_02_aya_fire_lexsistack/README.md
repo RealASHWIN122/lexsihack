@@ -129,20 +129,27 @@ CircuitKIT/.venv/bin/python -u experiments/experiment_02_aya_fire_lexsistack/run
 
 ## 5. How to Run on a Cloud GPU (`run_experiment_cloud.py`)
 
-If you do not want to download/run the 3.35B model on local CPU RAM, use `run_experiment_cloud.py` on a 24 GB+ VRAM GPU (e.g., Google Colab L4/A100, RunPod, Kaggle, Lambda):
+`run_experiment_cloud.py` runs the **unscaled paper methodology** on a 24 GB+ VRAM GPU (e.g., Google Colab L4/A100, RunPod, Kaggle, Lambda):
+* **Circuit Discovery**: `ig_steps=5`, `top_k_edges=64`, `max_seq_len=64`, and `select_directions=True` (with graceful fallback if needed).
+* **$\alpha$ Calibration Sweep**: Sweeps `--alpha-grid 0.25,0.5,0.75,1.0` balancing harmful refusal vs. benign over-refusal.
+* **Full Benchmarks**: Evaluates all rows in every downloaded suite by default (`--eval-n 0`, `max_new_tokens=128`).
+* **Full Two-Judge Panel**: Runs `auditkit.LLMJudge` (`openai:gpt-4o-mini` if `OPENAI_API_KEY` is set, or open-weights `hf:Qwen/Qwen2.5-7B-Instruct` via `HF_TOKEN`) **plus** `auditkit.GuardJudge(profile="wildguard")` (`hf:allenai/wildguard`).
 
 ```bash
 git clone https://github.com/RealASHWIN122/lexsihack.git && cd lexsihack
 pip install -e ./CircuitKIT
 pip install curatorkit safetune auditkit aligntune python-dotenv
 read -rsp "Enter HF_TOKEN: " HF_TOKEN && export HF_TOKEN && echo
-python experiments/experiment_02_aya_fire_lexsistack/run_experiment_cloud.py --eval-n 6
+python experiments/experiment_02_aya_fire_lexsistack/run_experiment_cloud.py
 ```
 
 Additional flags on `run_experiment_cloud.py`:
 * `--model` (default: `CohereLabs/tiny-aya-fire`) — Hugging Face repo ID or local path.
 * `--hf-token` — Optional CLI override for `HF_TOKEN`.
 * `--dtype` (`auto` | `float32` | `float16` | `bfloat16`) — `auto` selects `bfloat16` + `device_map="auto"` on CUDA and `float32` on CPU.
+* `--eval-n` (default: `0`) — `0` runs full datasets; pass e.g. `--eval-n 20` for a faster run.
+* `--alpha-grid` (default: `0.25,0.5,0.75,1.0`) or `--alpha` to pin a fixed $\alpha$.
+* `--hf-judge-model` (default: `hf:Qwen/Qwen2.5-7B-Instruct`) / `--judge-model` / `--skip-wildguard`.
 
 ---
 

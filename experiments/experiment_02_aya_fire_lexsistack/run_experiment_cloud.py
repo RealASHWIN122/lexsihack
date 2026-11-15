@@ -158,7 +158,8 @@ def run_full_circuit_discovery(
     neuron_elapsed = time.time() - t1
 
     raw_scores_path = eap_out_dir / "eap_scores.json"
-    raw_scores = json.loads(raw_scores_path.read_text()) if raw_scores_path.exists() else {}
+    raw_json = json.loads(raw_scores_path.read_text()) if raw_scores_path.exists() else {}
+    raw_scores = raw_json.get("all_scores", raw_json) if isinstance(raw_json, dict) else {}
     mlp_scores: Dict[str, float] = {}
     for k, v in raw_scores.items():
         if k.startswith("blocks.") and k.endswith(".mlp"):
@@ -166,7 +167,7 @@ def run_full_circuit_discovery(
             mlp_scores[f"MLP {layer_idx}"] = round(abs(float(v)), 6)
 
     sorted_mlps = sorted(mlp_scores.items(), key=lambda x: x[1], reverse=True)
-    top_mlp_nodes = [name for name, _ in sorted_mlps[:11]] if sorted_mlps else [f"MLP {l}" for l in eap_layers]
+    top_mlp_nodes = [name for name, _ in sorted_mlps[:11]] if sorted_mlps else [f"MLP {l}" for l in eap_layers[:11]]
     target_layers = sorted(int(n.replace("MLP ", "")) for n in top_mlp_nodes)
 
     circuit = Circuit(
@@ -201,9 +202,164 @@ def run_full_circuit_discovery(
     circuit_info.layer_suggestions.target_modules = ["mlp.down_proj"]
     circuit_info.save(str(local_exp.RESULTS_DIR / "safety_units.json"))
 
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     print(f"✓ EAP-IG (ig_steps=5) completed in {eap_elapsed:.2f}s | SafetyNeuron in {neuron_elapsed:.2f}s")
     print(f"✓ Discovered top safety MLP layers: {target_layers}")
     return circuit, circuit_info, target_layers, used_direction_selection
+
+
+def _compute_ctheta_delta_cloud(
+    model: Any,
+    tokenizer: Any,
+    pairs: List[Dict[str, Any]],
+    matched_keys: List[str],
+    base_circuit_sd_cpu: Dict[str, torch.Tensor],
+    step_scale: float = 0.020,
+) -> Dict[str, torch.Tensor]:
+    """VRAM-safe C-ΔΘ delta: runs refuse/preserve backward passes sequentially and stores grads on CPU."""
+    model.load_state_dict(base_circuit_sd_cpu, strict=False)
+    for name, p in model.named_parameters():
+        p.requires_grad_(name in matched_keys)
+
+    accum_grads = {k: torch.zeros_like(base_circuit_sd_cpu[k], dtype=torch.float32, device="cpu") for k in matched_keys}
+    model.zero_grad(set_to_none=True)
+
+    for row in pairs:
+        loss_refuse = local_exp._teacher_forced_loss(model, tokenizer, row["corrupted_prompt"], row["corrupted_answer"])
+        loss_refuse.backward()
+        del loss_refuse
+
+        loss_preserve = 0.5 * local_exp._teacher_forced_loss(model, tokenizer, row["clean_prompt"], row["clean_answer"])
+        loss_preserve.backward()
+        del loss_preserve
+
+        for name, p in model.named_parameters():
+            if name in accum_grads and p.grad is not None:
+                accum_grads[name] += p.grad.detach().float().cpu()
+        model.zero_grad(set_to_none=True)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    for p in model.parameters():
+        p.requires_grad_(False)
+
+    sq_sum = sum((g * g).sum().item() for g in accum_grads.values())
+    norm = max(sq_sum ** 0.5, 1e-8)
+    return {k: -(step_scale / norm) * g for k, g in accum_grads.items()}
+
+
+def compute_repairs_cloud(
+    model: Any,
+    tokenizer: Any,
+    contrast_rows: List[Dict[str, Any]],
+    circuit_info: Any,
+    target_layers: List[int],
+    alpha: float = 1.0,
+) -> Dict[str, Any]:
+    """GPU-memory-safe Step 3: stores all state dicts and deltas on CPU."""
+    print("\n" + "=" * 80)
+    print("[Step 3/5 — SafeTune.recover] Real Per-Language & Cyber C-ΔΘ Weight Updates")
+    print("=" * 80)
+
+    matched_keys = [f"model.layers.{li}.mlp.down_proj.weight" for li in target_layers]
+    full_sd = model.state_dict()
+    for k in matched_keys:
+        if k not in full_sd:
+            raise KeyError(f"Expected weight {k} not found in model state_dict!")
+
+    base_circuit_sd = {k: full_sd[k].detach().cpu().clone() for k in matched_keys}
+    non_circuit_sample_keys = [
+        k for k in full_sd.keys()
+        if k not in matched_keys and ("embed_tokens" in k or "self_attn" in k or "gate_proj" in k or "layers.0." in k or "layers.35." in k)
+    ][:20]
+    non_circuit_before = {k: full_sd[k].detach().cpu().clone() for k in non_circuit_sample_keys}
+    del full_sd
+
+    ml_rows = [r for r in contrast_rows if r["track"] == "multilingual_safety"]
+    per_lang_deltas: Dict[str, Dict[str, torch.Tensor]] = {}
+    t0 = time.time()
+    for row in ml_rows:
+        lg = row["lang"]
+        print(f"  • Computing C-ΔΘ delta for language={lg!r}...")
+        per_lang_deltas[lg] = _compute_ctheta_delta_cloud(
+            model, tokenizer, [row], matched_keys, base_circuit_sd, step_scale=0.020
+        )
+
+    ml_consolidated_delta = {
+        k: sum(per_lang_deltas[lg][k] for lg in per_lang_deltas) / len(per_lang_deltas)
+        for k in matched_keys
+    }
+    ml_positive_sd = {k: base_circuit_sd[k].float() + ml_consolidated_delta[k] for k in matched_keys}
+    ml_elapsed = time.time() - t0
+
+    cy_rows = [r for r in contrast_rows if r["track"] == "cybersecurity_safety"]
+    t1 = time.time()
+    print(f"  • Computing C-ΔΘ delta for cybersecurity_safety ({len(cy_rows)} contrastive pairs)...")
+    cy_delta = _compute_ctheta_delta_cloud(
+        model, tokenizer, cy_rows, matched_keys, base_circuit_sd, step_scale=0.020
+    )
+    cy_positive_sd = {k: base_circuit_sd[k].float() + cy_delta[k] for k in matched_keys}
+    cy_elapsed = time.time() - t1
+
+    model.load_state_dict(base_circuit_sd, strict=False)
+    apply_ctheta_from_state_dicts(
+        model,
+        positive_sd=ml_positive_sd,
+        negative_sd=base_circuit_sd,
+        circuit_info=circuit_info,
+        strength=alpha,
+    )
+    after_sd = model.state_dict()
+    max_non_circuit_diff = max(
+        float((after_sd[k].detach().cpu() - non_circuit_before[k]).abs().max().item())
+        for k in non_circuit_sample_keys
+    )
+    ml_circuit_l2 = sum(float((after_sd[k].detach().cpu().float() - base_circuit_sd[k].float()).pow(2).sum().item()) for k in matched_keys) ** 0.5
+    cy_circuit_l2 = sum(float(cy_delta[k].pow(2).sum().item()) for k in matched_keys) ** 0.5
+    del after_sd
+
+    model.load_state_dict(base_circuit_sd, strict=False)
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    print(f"✓ Repair 1 (Multilingual, {len(per_lang_deltas)} langs consolidated) computed in {ml_elapsed:.2f}s | ΔW L2 = {ml_circuit_l2:.5f}")
+    print(f"✓ Repair 2 (Cybersecurity) computed in {cy_elapsed:.2f}s | ΔW L2 = {cy_circuit_l2:.5f}")
+    print(f"✓ Verified non-circuit weights untouched: max |ΔW_outside_circuit| = {max_non_circuit_diff:.1e}")
+
+    provenance = st.provenance.make_provenance(
+        method="ctheta",
+        base_model=str(local_exp.MODEL_DIR),
+        inputs=["data/data.csv", "data/task.yaml"],
+        params={
+            "target_layers": target_layers,
+            "modified_weights": matched_keys,
+            "steering_strength": alpha,
+            "multilingual_languages_consolidated": list(per_lang_deltas.keys()),
+            "ml_delta_l2": round(ml_circuit_l2, 6),
+            "cyber_delta_l2": round(cy_circuit_l2, 6),
+            "max_non_circuit_weight_diff": max_non_circuit_diff,
+            "tokenizer_and_config": "unchanged",
+            "aligntune_used_for_retraining": False,
+            "mansu_used_for_unlearning": False,
+        },
+    )
+    st.provenance.write_provenance(local_exp.RESULTS_DIR, provenance)
+    print(f"✓ SafeTune provenance written → {local_exp.RESULTS_DIR / 'lexsi_provenance.json'}")
+
+    return {
+        "matched_keys": matched_keys,
+        "base_circuit_sd": base_circuit_sd,
+        "ml_positive_sd": ml_positive_sd,
+        "cy_positive_sd": cy_positive_sd,
+        "ml_circuit_l2": ml_circuit_l2,
+        "cy_circuit_l2": cy_circuit_l2,
+        "max_non_circuit_diff": max_non_circuit_diff,
+        "provenance": provenance,
+    }
 
 
 def calibrate_alpha(
@@ -613,7 +769,7 @@ def main() -> None:
         # 3. SafeTune.recover + α calibration sweep
         alpha_grid = [float(x.strip()) for x in args.alpha_grid.split(",") if x.strip()]
         initial_alpha = args.alpha if args.alpha is not None else 1.0
-        repair_data = local_exp.compute_repairs_via_safetune(
+        repair_data = compute_repairs_cloud(
             model, tokenizer, contrast_rows, circuit_info, target_layers, alpha=initial_alpha
         )
         if args.alpha is not None:

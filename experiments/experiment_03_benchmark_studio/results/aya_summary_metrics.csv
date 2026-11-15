@@ -1,0 +1,3 @@
+Model State,Params,Alignment / Intervention,ARR (%),FRR (%),CRCR (%),Calibration_Score
+tiny-aya-fire (Baseline Uncorrected),3.35B,Regional Instruction Alignment (South Asia),22.22,0.0,83.33,36.36
+tiny-aya-fire (SafeTune C-Delta-Theta),3.35B,C-Delta-Theta Circuit-Restricted Weight Arithmetic (alpha=0.42),100.0,0.0,100.0,100.0

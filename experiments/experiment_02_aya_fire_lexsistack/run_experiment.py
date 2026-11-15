@@ -26,6 +26,7 @@ Zero mocks, zero hardcoded scores as measured outputs:
 import argparse
 import json
 import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import re
 import time
 from pathlib import Path
@@ -78,7 +79,30 @@ RESULTS_DIR = EXP_DIR / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_DIR = Path("/home/me/models/tiny-aya-fire")
+def resolve_model_dir(cli_model: Optional[str] = None) -> Path:
+    if cli_model:
+        p = Path(cli_model)
+        if p.exists():
+            return p
+        return Path(cli_model)
+    p_default = Path("/home/me/models/tiny-aya-fire")
+    if p_default.exists():
+        return p_default
+    hf_snapshot = (
+        Path.home()
+        / ".cache"
+        / "huggingface"
+        / "hub"
+        / "models--CohereLabs--tiny-aya-fire"
+        / "snapshots"
+        / "73500c80fcb6c8bea3e830c21d5d2920249a0e1a"
+    )
+    if hf_snapshot.exists():
+        return hf_snapshot
+    return Path("CohereLabs/tiny-aya-fire")
+
+
+MODEL_DIR = resolve_model_dir()
 TASK_YAML = DATA_DIR / "task.yaml"
 DATA_CSV = DATA_DIR / "data.csv"
 
@@ -123,6 +147,7 @@ def generate_response(
 ) -> str:
     formatted = format_cohere_prompt(tokenizer, prompt_text, keep_system_preamble=keep_system_preamble)
     enc = tokenizer(formatted, return_tensors="pt", truncation=True, max_length=512)
+    enc.pop("token_type_ids", None)
     device = next(model.parameters()).device
     enc = {k: v.to(device) for k, v in enc.items()}
     with torch.no_grad():
@@ -213,6 +238,7 @@ def run_real_circuit_discovery(
     tokenizer: Any,
     task_spec: Any,
     contrast_rows: List[Dict[str, Any]],
+    dtype_name: str = "float32",
 ) -> Tuple[Circuit, Any, List[int]]:
     print("\n" + "=" * 80)
     print("[Step 2/5 — CircuitKIT & SafeTune.interpret] Real EAP-IG Circuit Discovery")
@@ -234,7 +260,7 @@ def run_real_circuit_discovery(
         top_k_edges=16,
         batch_size=2,
         max_seq_len=48,
-        dtype="float32",
+        dtype=dtype_name,
         output_dir=str(eap_out_dir),
     )
     eap_info = eap_safety_circuit(
@@ -334,7 +360,7 @@ def _teacher_forced_loss(model: Any, tokenizer: Any, prompt: str, answer: str) -
     prompt_str = format_cohere_prompt(tokenizer, prompt, keep_system_preamble=False)
     full_str = prompt_str + answer + (tokenizer.eos_token or "")
     prompt_ids = tokenizer(prompt_str, add_special_tokens=False)["input_ids"]
-    full_enc = tokenizer(full_str, return_tensors="pt", truncation=True, max_length=256, add_special_tokens=False)
+    full_enc = tokenizer(full_str, return_tensors="pt", truncation=True, max_length=160, add_special_tokens=False)
     device = next(model.parameters()).device
     input_ids = full_enc["input_ids"].to(device)
     labels = input_ids.clone()
@@ -353,12 +379,13 @@ def _compute_contrastive_ctheta_delta(
     step_scale: float = 0.015,
 ) -> Dict[str, torch.Tensor]:
     """Compute a bounded C-ΔΘ gradient update strictly on matched mlp.down_proj.weight keys."""
+    dev = next(model.parameters()).device
     # Ensure circuit weights start at exact base checkpoint
-    model.load_state_dict(base_circuit_sd, strict=False)
+    model.load_state_dict({k: v.to(dev) for k, v in base_circuit_sd.items()}, strict=False)
     for name, p in model.named_parameters():
         p.requires_grad_(name in matched_keys)
 
-    accum_grads = {k: torch.zeros_like(base_circuit_sd[k], dtype=torch.float32) for k in matched_keys}
+    accum_grads = {k: torch.zeros_like(base_circuit_sd[k], dtype=torch.float32, device=dev) for k in matched_keys}
     model.zero_grad(set_to_none=True)
 
     for row in pairs:
@@ -372,6 +399,9 @@ def _compute_contrastive_ctheta_delta(
             if name in accum_grads and p.grad is not None:
                 accum_grads[name] += p.grad.detach().float()
         model.zero_grad(set_to_none=True)
+        del loss_refuse, loss_preserve, total_loss
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     # Freeze parameters back
     for p in model.parameters():
@@ -380,7 +410,10 @@ def _compute_contrastive_ctheta_delta(
     # Normalize global L2 norm across the circuit delta so step_scale controls exact Frobenius norm
     sq_sum = sum((g * g).sum().item() for g in accum_grads.values())
     norm = max(sq_sum ** 0.5, 1e-8)
-    delta_sd = {k: -(step_scale / norm) * g for k, g in accum_grads.items()}
+    delta_sd = {k: (-(step_scale / norm) * g).cpu() for k, g in accum_grads.items()}
+    del accum_grads
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     return delta_sd
 
 
@@ -402,13 +435,13 @@ def compute_repairs_via_safetune(
         if k not in full_sd:
             raise KeyError(f"Expected weight {k} not found in tiny-aya-fire state_dict!")
 
-    base_circuit_sd = {k: full_sd[k].detach().clone() for k in matched_keys}
+    base_circuit_sd = {k: full_sd[k].detach().clone().cpu() for k in matched_keys}
     # Snapshot checksum of all non-circuit weights to prove zero collateral weight modification
     non_circuit_sample_keys = [
         k for k in full_sd.keys()
         if k not in matched_keys and ("embed_tokens" in k or "self_attn" in k or "gate_proj" in k or "layers.0." in k or "layers.35." in k)
     ][:20]
-    non_circuit_before = {k: full_sd[k].detach().clone() for k in non_circuit_sample_keys}
+    non_circuit_before = {k: full_sd[k].detach().clone().cpu() for k in non_circuit_sample_keys}
 
     # --- Repair 1: Multilingual Safety Repair (Per-Language C-ΔΘ -> Consolidated) ---
     ml_rows = [r for r in contrast_rows if r["track"] == "multilingual_safety"]
@@ -420,13 +453,15 @@ def compute_repairs_via_safetune(
         per_lang_deltas[lg] = _compute_contrastive_ctheta_delta(
             model, tokenizer, [row], matched_keys, base_circuit_sd, step_scale=0.020
         )
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     # Consolidate per-language deltas into one static checkpoint delta
     ml_consolidated_delta = {
         k: sum(per_lang_deltas[lg][k] for lg in per_lang_deltas) / len(per_lang_deltas)
         for k in matched_keys
     }
-    ml_positive_sd = {k: base_circuit_sd[k] + ml_consolidated_delta[k] for k in matched_keys}
+    ml_positive_sd = {k: (base_circuit_sd[k].float() + ml_consolidated_delta[k]).to(base_circuit_sd[k].dtype) for k in matched_keys}
     ml_elapsed = time.time() - t0
 
     # --- Repair 2: Cybersecurity Safety Repair (Offensive vs Defensive C-ΔΘ) ---
@@ -436,28 +471,31 @@ def compute_repairs_via_safetune(
     cy_delta = _compute_contrastive_ctheta_delta(
         model, tokenizer, cy_rows, matched_keys, base_circuit_sd, step_scale=0.020
     )
-    cy_positive_sd = {k: base_circuit_sd[k] + cy_delta[k] for k in matched_keys}
+    cy_positive_sd = {k: (base_circuit_sd[k].float() + cy_delta[k]).to(base_circuit_sd[k].dtype) for k in matched_keys}
     cy_elapsed = time.time() - t1
 
     # Verify apply_ctheta_from_state_dicts on the REAL tiny-aya-fire model and check non-circuit invariance
-    model.load_state_dict(base_circuit_sd, strict=False)
+    dev = next(model.parameters()).device
+    model.load_state_dict({k: v.to(dev) for k, v in base_circuit_sd.items()}, strict=False)
     apply_ctheta_from_state_dicts(
         model,
-        positive_sd=ml_positive_sd,
-        negative_sd=base_circuit_sd,
+        positive_sd={k: v.to(dev) for k, v in ml_positive_sd.items()},
+        negative_sd={k: v.to(dev) for k, v in base_circuit_sd.items()},
         circuit_info=circuit_info,
         strength=alpha,
     )
     after_sd = model.state_dict()
     max_non_circuit_diff = max(
-        float((after_sd[k] - non_circuit_before[k]).abs().max().item())
+        float((after_sd[k].cpu() - non_circuit_before[k]).abs().max().item())
         for k in non_circuit_sample_keys
     )
-    ml_circuit_l2 = sum(float((after_sd[k] - base_circuit_sd[k]).pow(2).sum().item()) for k in matched_keys) ** 0.5
+    ml_circuit_l2 = sum(float((after_sd[k].cpu() - base_circuit_sd[k]).pow(2).sum().item()) for k in matched_keys) ** 0.5
     cy_circuit_l2 = sum(float(cy_delta[k].pow(2).sum().item()) for k in matched_keys) ** 0.5
 
     # Restore exact base weights before evaluation phase starts
-    model.load_state_dict(base_circuit_sd, strict=False)
+    model.load_state_dict({k: v.to(dev) for k, v in base_circuit_sd.items()}, strict=False)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     print(f"✓ Repair 1 (Multilingual, 6 langs consolidated) computed in {ml_elapsed:.2f}s | ΔW L2 = {ml_circuit_l2:.5f}")
     print(f"✓ Repair 2 (Cybersecurity) computed in {cy_elapsed:.2f}s | ΔW L2 = {cy_circuit_l2:.5f}")
@@ -561,6 +599,7 @@ def evaluate_wmdp_mcq(model: Any, tokenizer: Any, items: List[Dict[str, Any]]) -
         )
         formatted = format_cohere_prompt(tokenizer, prompt, keep_system_preamble=False)
         enc = tokenizer(formatted, return_tensors="pt", truncation=True, max_length=384)
+        enc.pop("token_type_ids", None)
         enc = {k: v.to(device) for k, v in enc.items()}
         with torch.no_grad():
             logits = model(**enc).logits[0, -1, choice_token_ids]
@@ -732,12 +771,13 @@ def run_real_evaluation(
 
         for ckpt_name, pos_sd in checkpoints:
             print(f"\n  Evaluating real checkpoint: {ckpt_name} ...")
-            model.load_state_dict(repair_data["base_circuit_sd"], strict=False)
+            dev = next(model.parameters()).device
+            model.load_state_dict({k: v.to(dev) for k, v in repair_data["base_circuit_sd"].items()}, strict=False)
             if pos_sd is not None:
                 apply_ctheta_from_state_dicts(
                     model,
-                    positive_sd=pos_sd,
-                    negative_sd=repair_data["base_circuit_sd"],
+                    positive_sd={k: v.to(dev) for k, v in pos_sd.items()},
+                    negative_sd={k: v.to(dev) for k, v in repair_data["base_circuit_sd"].items()},
                     circuit_info=circuit_info,
                     strength=alpha,
                 )
@@ -772,7 +812,10 @@ def run_real_evaluation(
             print(f"  ✓ {ckpt_name} finished in {time.time() - t_ckpt:.1f}s | WMDP={wmdp_scores[ckpt_name]}")
 
         # Restore base weights cleanly
-        model.load_state_dict(repair_data["base_circuit_sd"], strict=False)
+        dev = next(model.parameters()).device
+        model.load_state_dict({k: v.to(dev) for k, v in repair_data["base_circuit_sd"].items()}, strict=False)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         gen_cache_path.write_text(json.dumps({"transcripts": transcripts, "wmdp_scores": wmdp_scores}, indent=2, ensure_ascii=False))
         print(f"\n✓ Saved all real tiny-aya-fire transcripts → {gen_cache_path}")
 
@@ -922,6 +965,8 @@ def document_aligntune_and_mansu_roles() -> Dict[str, Any]:
 
 def main():
     parser = argparse.ArgumentParser(description="1:1 Lexsi Stack Replication on CohereLabs/tiny-aya-fire")
+    parser.add_argument("--model", type=str, default=None, help="Model directory or HF repo")
+    parser.add_argument("--dtype", type=str, default="auto", choices=["auto", "float32", "bfloat16", "float16"], help="Model torch dtype")
     parser.add_argument("--eval-n", type=int, default=6, help="Samples per benchmark suite (0 = full dataset)")
     parser.add_argument("--max-new-tokens", type=int, default=64, help="Max new tokens per generation")
     parser.add_argument("--alpha", type=float, default=1.0, help="C-ΔΘ steering strength")
@@ -943,25 +988,45 @@ def main():
     register_task(task_spec, overwrite=True)
     registered_task = get_task(task_spec.name)
 
+    model_path = resolve_model_dir(args.model)
+
     if args.rejudge_only and (RESULTS_DIR / "aya_fire_generations.json").exists():
         model, tokenizer = None, None
         circuit_info = None
         repair_data = {}
         target_layers = []
     else:
-        torch.set_num_threads(6)
-        print(f"\nLoading {MODEL_DIR} in torch.float32 (CPU AVX2 fast path)...")
+        if args.dtype == "auto":
+            dtype_choice = torch.bfloat16
+            dtype_name = "bfloat16"
+        elif args.dtype == "bfloat16":
+            dtype_choice = torch.bfloat16
+            dtype_name = "bfloat16"
+        elif args.dtype == "float16":
+            dtype_choice = torch.float16
+            dtype_name = "float16"
+        else:
+            dtype_choice = torch.float32
+            dtype_name = "float32"
+
+        device_map = "auto" if torch.cuda.is_available() else None
+        print(f"\nLoading {model_path} in {dtype_name} (device_map={device_map})...")
         t_load = time.time()
-        tokenizer = AutoTokenizer.from_pretrained(str(MODEL_DIR))
+        tokenizer = AutoTokenizer.from_pretrained(str(model_path))
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        model = AutoModelForCausalLM.from_pretrained(str(MODEL_DIR), dtype=torch.float32, low_cpu_mem_usage=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            str(model_path),
+            torch_dtype=dtype_choice,
+            device_map=device_map,
+            low_cpu_mem_usage=True,
+        )
         model.eval()
-        print(f"✓ Model loaded in {time.time() - t_load:.2f}s")
+        print(f"✓ Model loaded in {time.time() - t_load:.2f}s on {next(model.parameters()).device}")
 
         # 2. CircuitKIT + SafeTune.interpret
         circuit, circuit_info, target_layers = run_real_circuit_discovery(
-            model, tokenizer, registered_task, contrast_rows
+            model, tokenizer, registered_task, contrast_rows, dtype_name=dtype_name
         )
 
         # 3. SafeTune.recover (Real C-ΔΘ on tiny-aya-fire)
@@ -988,7 +1053,7 @@ def main():
 
     elapsed = round(time.time() - t_start, 2)
     summary = {
-        "model": str(MODEL_DIR),
+        "model": str(model_path),
         "target_layers": target_layers,
         "elapsed_seconds": elapsed,
         "llm_judge_used": ledger.get("llm_judge_used", False),

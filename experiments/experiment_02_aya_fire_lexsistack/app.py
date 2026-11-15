@@ -12,7 +12,30 @@ import torch
 
 EXP_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = EXP_DIR / "results"
-MODEL_PATH = Path("/home/me/models/tiny-aya-fire")
+def resolve_model_dir(cli_model: str = None) -> Path:
+    if cli_model:
+        p = Path(cli_model)
+        if p.exists():
+            return p
+        return Path(cli_model)
+    p_default = Path("/home/me/models/tiny-aya-fire")
+    if p_default.exists():
+        return p_default
+    hf_snapshot = (
+        Path.home()
+        / ".cache"
+        / "huggingface"
+        / "hub"
+        / "models--CohereLabs--tiny-aya-fire"
+        / "snapshots"
+        / "73500c80fcb6c8bea3e830c21d5d2920249a0e1a"
+    )
+    if hf_snapshot.exists():
+        return hf_snapshot
+    return Path("CohereLabs/tiny-aya-fire")
+
+
+MODEL_PATH = resolve_model_dir()
 
 st.set_page_config(
     page_title="Aya-Fire Safety Studio | Lexsi Stack",

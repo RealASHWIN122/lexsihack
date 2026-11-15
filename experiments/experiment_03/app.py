@@ -36,6 +36,7 @@ EVALS_PATH = EXP_DIR / "results" / "aya_raw_evaluations.jsonl"
 LEDGER_PATH = EXP_DIR / "results" / "audit_ledger.json"
 CIRCUIT_GRAPH_PATH = EXP_DIR / "results" / "circuit_graph.html"
 REPORT_PATH = EXP_DIR / "reports" / "AYA_SAFETY_BENCHMARK_REPORT.md"
+PDF_REPORT_PATH = EXP_DIR / "reports" / "AYA_SAFETY_BENCHMARK_REPORT.pdf"
 CSV_METRICS_PATH = EXP_DIR / "results" / "aya_summary_metrics.csv"
 CIRCUIT_SCORES_PATH = EXP_DIR / "results" / "circuit_scores.json"
 CIRCUIT_NODES_PATH = EXP_DIR / "results" / "circuit_nodes.json"
@@ -528,50 +529,71 @@ def main():
 
         # Download Action Bar
         st.markdown("#### 📥 One-Click Artifact Download Center")
-        dl_col1, dl_col2, dl_col3, dl_col4 = st.columns(4)
+        dl_col1, dl_col2, dl_col3, dl_col4, dl_col5 = st.columns(5)
 
         with dl_col1:
+            if not PDF_REPORT_PATH.exists():
+                try:
+                    from generate_pdf_report import build_pdf_report
+                    build_pdf_report(PDF_REPORT_PATH)
+                except Exception:
+                    pass
+
+            if PDF_REPORT_PATH.exists():
+                with open(PDF_REPORT_PATH, "rb") as f:
+                    pdf_bytes = f.read()
+                st.download_button(
+                    label="📕 Download Report (PDF)",
+                    data=pdf_bytes,
+                    file_name="AYA_SAFETY_BENCHMARK_REPORT.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            else:
+                st.warning("PDF generating...")
+
+        with dl_col2:
             if REPORT_PATH.exists():
                 with open(REPORT_PATH, "r", encoding="utf-8") as f:
                     rep_content = f.read()
                 st.download_button(
-                    label="📄 Download Report (.md)",
+                    label="📄 Download Markdown (.md)",
                     data=rep_content,
                     file_name="AYA_SAFETY_BENCHMARK_REPORT.md",
                     mime="text/markdown",
                     use_container_width=True
                 )
 
-        with dl_col2:
+        with dl_col3:
             if LEDGER_PATH.exists():
                 with open(LEDGER_PATH, "r", encoding="utf-8") as f:
                     ledger_json_str = f.read()
                 st.download_button(
-                    label="📊 Download Audit Ledger (.json)",
+                    label="📊 Download Ledger (.json)",
                     data=ledger_json_str,
                     file_name="audit_ledger.json",
                     mime="application/json",
                     use_container_width=True
                 )
 
-        with dl_col3:
+        with dl_col4:
             if CSV_METRICS_PATH.exists():
                 with open(CSV_METRICS_PATH, "r", encoding="utf-8") as f:
                     csv_content = f.read()
                 st.download_button(
-                    label="📈 Download Summary CSV (.csv)",
+                    label="📈 Download CSV (.csv)",
                     data=csv_content,
                     file_name="aya_summary_metrics.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
 
-        with dl_col4:
+        with dl_col5:
             if CIRCUIT_SCORES_PATH.exists():
                 with open(CIRCUIT_SCORES_PATH, "r", encoding="utf-8") as f:
                     scores_json_str = f.read()
                 st.download_button(
-                    label="🔬 Download Circuit Scores (.json)",
+                    label="🔬 Download Scores (.json)",
                     data=scores_json_str,
                     file_name="circuit_scores.json",
                     mime="application/json",

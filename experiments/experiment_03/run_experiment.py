@@ -505,6 +505,13 @@ def run_experiment(force_live: bool = False) -> Dict[str, Any]:
                 m["Calibration_Score"]
             ])
 
+    # Automatically compile publication-grade executive PDF report
+    try:
+        from generate_pdf_report import build_pdf_report
+        build_pdf_report()
+    except Exception:
+        pass
+
     return master_summaries
 
 

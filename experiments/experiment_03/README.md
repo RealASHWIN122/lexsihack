@@ -38,6 +38,7 @@ flowchart LR
 experiments/experiment_03/
 ├── README.md                      # This comprehensive experiment guide
 ├── app.py                         # Streamlit Web Studio (Live GPU inference, browser, downloads)
+├── generate_pdf_report.py         # Publication-grade PDF report compiler
 ├── run_experiment.py              # End-to-end benchmark evaluation harness
 ├── run_pair04_attribution.py      # CircuitKIT eap-ig attribution tracing script
 ├── apply_circuit_repair.py        # PyTorch C-ΔΘ circuit-restricted weight repair utility
@@ -47,7 +48,8 @@ experiments/experiment_03/
 │   ├── DATASET_CARD.md            # Benchmark taxonomy, schemas, and scoring criteria
 │   └── task.yaml                  # Declarative CircuitKIT task configuration
 ├── reports/
-│   └── AYA_SAFETY_BENCHMARK_REPORT.md # Full technical evaluation report
+│   ├── AYA_SAFETY_BENCHMARK_REPORT.md  # Full technical evaluation report (Markdown)
+│   └── AYA_SAFETY_BENCHMARK_REPORT.pdf # Publication-grade Executive Report (PDF)
 └── results/
     ├── audit_ledger.json          # Verified before-and-after triaxial audit ledger
     ├── aya_raw_evaluations.jsonl  # 100% live GPU decoded completions
@@ -56,7 +58,8 @@ experiments/experiment_03/
     ├── circuit.pt                 # Serialized CircuitKIT causal subnetwork (< 1 MB)
     ├── circuit_graph.html         # Interactive D3 + ELK network visualization
     ├── circuit_nodes.json         # Ranked MLP and attention head attributions
-    └── circuit_scores.json        # Full layer-by-layer attribution scores
+    ├── circuit_scores.json        # Full layer-by-layer attribution scores
+    └── safety_parity_chart.png    # High-resolution benchmark comparison chart
 ```
 
 ---
@@ -86,6 +89,11 @@ python experiments/experiment_03/run_pair04_attribution.py
 ### 4. Execute Targeted Weight Repair ($C-\Delta\Theta$) on CUDA
 ```bash
 python experiments/experiment_03/apply_circuit_repair.py
+```
+
+### 5. Compile Publication-Grade PDF Report
+```bash
+python experiments/experiment_03/generate_pdf_report.py
 ```
 
 ---

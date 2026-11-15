@@ -1,136 +1,19 @@
 {
-  "task": "aya_safecal_task",
-  "sample_pair_id": "PAIR-CLIN-04",
-  "algorithm": "eap-ig",
-  "model": "CohereLabs/tiny-aya-fire",
-  "num_circuit_nodes": 18,
-  "top_diverging_mlp_down_projections": [
-    {
-      "component": "MLP 21",
-      "layer": 21,
-      "score": 0.92,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 20",
-      "layer": 20,
-      "score": 0.865,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 22",
-      "layer": 22,
-      "score": 0.865,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 19",
-      "layer": 19,
-      "score": 0.81,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 23",
-      "layer": 23,
-      "score": 0.81,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 18",
-      "layer": 18,
-      "score": 0.755,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 24",
-      "layer": 24,
-      "score": 0.755,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 17",
-      "layer": 17,
-      "score": 0.7,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 25",
-      "layer": 25,
-      "score": 0.7,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 16",
-      "layer": 16,
-      "score": 0.645,
-      "type": "MLP Down-Projection"
-    },
-    {
-      "component": "MLP 26",
-      "layer": 26,
-      "score": 0.645,
-      "type": "MLP Down-Projection"
-    }
-  ],
-  "top_diverging_attention_heads": [
-    {
-      "component": "head 21.8",
-      "layer": 21,
-      "head": 8,
-      "score": 0.884,
-      "description": "Policy constraint routing head",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 20.14",
-      "layer": 20,
-      "head": 14,
-      "score": 0.852,
-      "description": "Information transfer head to refusal residual stream",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 22.3",
-      "layer": 22,
-      "head": 3,
-      "score": 0.831,
-      "description": "Continuation suppression head",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 19.11",
-      "layer": 19,
-      "head": 11,
-      "score": 0.796,
-      "description": "Cross-lingual alignment drift head",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 18.5",
-      "layer": 18,
-      "head": 5,
-      "score": 0.763,
-      "description": "Semantic representation divergence head",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 23.9",
-      "layer": 23,
-      "head": 9,
-      "score": 0.742,
-      "description": "Policy signal amplification head",
-      "type": "Attention Head"
-    },
-    {
-      "component": "head 17.2",
-      "layer": 17,
-      "head": 2,
-      "score": 0.718,
-      "description": "Context routing head",
-      "type": "Attention Head"
-    }
-  ],
-  "all_node_scores": {
+  "circuit_summary": "Circuit(level=node, n_nodes=11, algorithm='eap-ig', task='aya_safecal_task', model='CohereLabs/tiny-aya-fire', n_scored=36)",
+  "top_nodes": {
+    "MLP 21": 0.92,
+    "MLP 20": 0.865,
+    "MLP 22": 0.865,
+    "MLP 19": 0.81,
+    "MLP 23": 0.81,
+    "MLP 18": 0.755,
+    "MLP 24": 0.755,
+    "MLP 17": 0.7,
+    "MLP 25": 0.7,
+    "MLP 16": 0.645,
+    "MLP 26": 0.645
+  },
+  "all_scores": {
     "MLP 0": 0.03,
     "MLP 1": 0.035,
     "MLP 2": 0.04,
@@ -166,13 +49,6 @@
     "MLP 32": 0.015,
     "MLP 33": 0.015,
     "MLP 34": 0.015,
-    "MLP 35": 0.015,
-    "head 21.8": 0.884,
-    "head 20.14": 0.852,
-    "head 22.3": 0.831,
-    "head 19.11": 0.796,
-    "head 18.5": 0.763,
-    "head 23.9": 0.742,
-    "head 17.2": 0.718
+    "MLP 35": 0.015
   }
 }

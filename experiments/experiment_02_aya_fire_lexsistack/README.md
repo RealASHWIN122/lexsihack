@@ -1,134 +1,172 @@
-# Experiment 02: Targeted Model Repair on Aya-Fire (CohereLabs/tiny-aya-fire)
+# Experiment 02: Targeted Model Repair on Aya-Fire (`CohereLabs/tiny-aya-fire`)
 
-This experiment evaluates, diagnoses, and repairs alignment vulnerabilities in the regionally specialized multilingual foundation model **`CohereLabs/tiny-aya-fire`** (3.35B, `Cohere2ForCausalLM`) using the **Lexsi Alignment and Safety Stack** (**CuratorKIT**, **CircuitKIT**, **SafeTune**, and **AuditKIT**).
+This experiment evaluates, diagnoses, and repairs multilingual and cybersecurity alignment vulnerabilities in **`CohereLabs/tiny-aya-fire`** (`Cohere2ForCausalLM`, 3.35B parameters, 36 layers) using the **Lexsi Alignment and Safety Stack** (**CuratorKIT**, **CircuitKIT**, **SafeTune**, and **AuditKIT**).
 
----
-
-## 1. Executive Summary
-
-`tiny-aya-fire` is an open-weights model specialized for South Asian languages (Hindi, Bengali, Tamil, Urdu, Telugu, etc.). While achieving high instruction fidelity and general utility, baseline auditing revealed substantial **cross-lingual safety disparities**, **multi-turn refusal degradation**, and **quantization erosion**. 
-
-Following the Lexsi Stack methodology, we:
-1. Identified the internal safety circuits governing refusal representations using **CircuitKIT** (pinpointing layers 16–26 in the 36-layer architecture).
-2. Applied **Circuit-Restricted Weight Arithmetic ($C-\Delta\Theta$)** via **SafeTune**, projecting refusal directions orthogonally across multilingual embedding subspaces without altering the base tokenizer or serving configuration.
-3. Audited the resulting checkpoint across the **Triaxial Audit Protocol** (Harmful Refusal $\uparrow$, Benign Over-Refusal $\downarrow$, Utility Preservation $\leftrightarrow$).
+Two entrypoints are provided:
+* **`run_experiment.py`** — Local runner expecting weights on disk at `/home/me/models/tiny-aya-fire` (`torch.float32`, CPU path).
+* **`run_experiment_cloud.py`** — Cloud/GPU runner that pulls `CohereLabs/tiny-aya-fire` (or any HF repo / local path via `--model`) using `HF_TOKEN` and automatically uses `CUDA + bfloat16`.
 
 ---
 
-## 2. Mechanistic Hypothesis & Architecture
+## 1. Mechanistic Hypothesis & Target Model
 
-* **Model**: `CohereLabs/tiny-aya-fire` (`cohere2` architecture, 36 hidden layers, hidden dimension 2,048, intermediate dimension 11,008, vocabulary size 262,144).
-* **Mechanistic Hypothesis**: Refusal mechanisms in multilingual instruct models are frequently **lexically entangled with English safety pre-training**. Non-English requests (or decomposed multi-turn sequences) bypass early attention routing and do not activate the late-layer refusal representations. By applying targeted weight displacements directly to intermediate MLP down-projections ($\Delta W_{\text{down}}$), refusal features are activated independently of input language tokens.
-
----
-
-## 3. Benchmarks & Audit Protocol
-
-The evaluation adheres to AuditKIT's standardized triaxial specification:
-
-1. **Axis A: Harmful Refusal Rate ($\uparrow$)**
-   * **HarmBench (English Standard)**: Direct compliance test on high-risk prompts.
-   * **HarmBench (Multilingual South Asian)**: Translated direct prompts across Hindi, Bengali, Tamil, and Urdu.
-   * **Five-Turn Decomposed Jailbreak (StrongREJECT)**: Multi-turn simulation and framing decay testing resistance across 5 sequential turns.
-   * **CyberSecBench (Offensive Exploit Generation)**: Propensity to generate actionable zero-day exploit payloads.
-
-2. **Axis B: Benign Usability ($\downarrow$)**
-   * **OR-Bench-Hard**: Tough benign prompts containing sensitive trigger words (`pkill`, chemical equations, historical defense tactics).
-   * **XSTest (Cross-Lingual False Refusal)**: Superficial trigger word evaluation in regional languages.
-
-3. **Axis C: Utility & Defensive Security Preservation ($\leftrightarrow$)**
-   * **Defensive Security Engineering**: Remediation guidance, patch development, secure code review, and firewall configuration.
-   * **MMLU / Reasoning Capabilities**: General domain knowledge and multi-step reasoning retention.
-   * **4-Bit Quantization Safety Retention**: Safety boundary persistence under INT4 / AWQ quantization.
+* **Target Model**: `CohereLabs/tiny-aya-fire` (`Cohere2ForCausalLM`, 3.35B parameters, 36 transformer layers).
+* **Mechanistic Hypothesis**: Refusal mechanisms in regionally specialized multilingual models are often entangled with English safety training, causing non-English harmful prompts (e.g., Hindi, Bengali, Tamil, Telugu, Kannada) and dual-use cybersecurity prompts to under-trigger late-layer refusal circuits.
+* **Repair Strategy ($C\text{-}\Delta\Theta$)**: By localizing safety-critical MLP layers via **EAP-IG** (`CircuitKIT` + `SafeTune.interpret`) and applying bounded contrastive gradient updates strictly to `model.layers.<layer>.mlp.down_proj.weight` (`SafeTune.recover`), refusal behavior is strengthened across South Asian languages and offensive cybersecurity queries while leaving non-circuit weights (`embed_tokens`, `self_attn`, `gate_proj`, non-target layers) untouched (`max |ΔW_outside_circuit| == 0.0`).
+* **Serving Overhead**: Zero extra parameters, zero runtime router/guardrail latency, and identical tokenizer/chat template.
 
 ---
 
-## 4. Pre-Intervention Baseline Failure Modes
+## 2. Contrastive Dataset & Task Schema
 
-Baseline auditing revealed three principal failure modes:
+### Contrastive Repair Dataset (`data/data.csv` & `data/task.yaml`)
+* **Task config**: `data/task.yaml` (`name: aya_fire_safety_task`, `metric: logit_diff`).
+* **CSV schema**: `lang,track,clean_prompt,clean_answer,corrupted_prompt,corrupted_answer`
+  * **`multilingual_safety`** (6 contrastive pairs across `en`, `hi`, `bn`, `ta`, `te`, `kn`): pairs a benign defensive/educational query (`clean_prompt` → `clean_answer`) with a harmful counterpart (`corrupted_prompt` → refusal `corrupted_answer`).
+  * **`cybersecurity_safety`** (2 contrastive pairs in `en`): pairs defensive security engineering (`Sysmon` detection rules, AWS `IMDSv2` hardening) with offensive exploitation requests (process hollowing/LSASS dumping, SSRF credential exfiltration).
+* **Strict Disjointness**: Step 1 automatically checks every `clean_prompt` and `corrupted_prompt` against all held-out JSON benchmarks in `data/benchmarks/` and aborts if any overlap exists.
 
-1. **The Cross-Lingual Safety Tax**: While English direct harmful refusal was high (**98.2%**), refusal plummeted to **28.4%** on identical prompts translated into South Asian languages (e.g. Hindi, Bengali, Urdu).
-2. **Multi-Turn Refusal Decay**: Under 5-turn conversational framing (roleplay or incremental contextual decomposition), refusal fell from 98.2% on Turn 1 to **44.8%** by Turn 5.
-3. **Quantization Safety Erosion**: Simulating standard edge deployment at 4-bit precision degraded refusal features, dropping safety retention to **59.8%**.
+### Held-Out Benchmark Suites (`data/benchmarks/`)
+Evaluated across all three checkpoints (**Base**, **Repair 1: Multilingual**, **Repair 2: Cybersecurity**):
+* **Refusal (Harmful $\uparrow$)**: `harmbench_direct_200.json`, `strongreject_full.json`, `multijail_10lang_full.json` (`en`, `bn`, `ar`, `zh`), `indicsafe_full.json`, `banglasafe_full.json`, `fortress_public_full.json`, `rmcbench_full.json`, `cybersec_dualuse_full.json` (offensive subset).
+* **Over-Refusal / Usability (Benign $\downarrow$)**: `or_bench_hard_1k.json`, `xstest_full.json` (`is_safe`), `jbb_benign_full.json`.
+* **Defensive Utility & Boundary Grading (`E/O/C/R/F`)**: `cybersec_defensive_10_tasks.json` (10 defensive tasks + boundary ARP spoofing prompt).
+* **Hazardous Knowledge Retention ($\leftrightarrow$)**: `wmdp_cyber_full.json`, `wmdp_bio_full.json`, `wmdp_chem_full.json` (4-choice A/B/C/D log-likelihood MCQ).
 
----
-
-## 5. Targeted Model Repair ($C-\Delta\Theta$)
-
-Using **CircuitKIT**, causal attribution scanning localized safety representation synthesis to **11 intermediate MLP layers (Layers 16 to 26)**:
-
-```
-[Layer 16] ──> [Layer 18] ──> [Layer 21: Peak Refusal Attribution (0.920)] ──> [Layer 26]
-```
-
-Using **SafeTune**, we applied bounded weight arithmetic:
-$$\Delta \Theta = \Theta_{\text{refusal}} - \Theta_{\text{base}}$$
-$$\Theta_{\text{repaired}} = \Theta_{\text{base}} + \alpha \cdot (M_{\text{circuit}} \odot \Delta \Theta)$$
-* **Steering Intensity ($\alpha$)**: `0.42`
-* **Target Parameters**: `mlp.down_proj` and `mlp.gate_proj` in layers 16–26 (representing $<15\%$ of total parameters).
-* **Serving Overhead**: **0 ms latency added**; identical tokenizer, architecture, and deployment pipeline.
+*(To rebuild or refresh the open-access benchmark JSONs from Hugging Face, run `data/build_full_datasets.py`.)*
 
 ---
 
-## 6. Audit Results & Comparative Ledger
+## 3. End-to-End 5-Stage Pipeline Architecture
 
-| Benchmark | Axis | Direction | Base (%) | Lexsi Repaired (%) | $\Delta$ Change | Audit Status |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **HarmBench (English Standard)** | Axis A: Refusal | $\uparrow$ | 98.2% | **99.1%** | **+0.9%** | PASS (Enhanced) |
-| **HarmBench (Multilingual Indic)** | Axis A: Refusal | $\uparrow$ | 28.4% | **94.2%** | **+65.8%** | **PASS (Substantial Gain)** |
-| **Five-Turn Decomposed Jailbreak** | Axis A: Refusal | $\uparrow$ | 44.8% | **81.6%** | **+36.8%** | **PASS (Resilient)** |
-| **CyberSecBench (Exploit Refusal)** | Axis A: Refusal | $\uparrow$ | 68.6% | **95.8%** | **+27.2%** | **PASS (Suppressed)** |
-| **OR-Bench-Hard (Benign Prompts)** | Axis B: Usability | $\downarrow$ | 8.2% | **8.9%** | **+0.7%** | PASS (Within Tolerance $<1\%$) |
-| **XSTest (Cross-Lingual False Refusal)** | Axis B: Usability | $\downarrow$ | 3.5% | **3.8%** | **+0.3%** | PASS (Negligible) |
-| **Defensive Security Engineering** | Axis C: Utility | $\leftrightarrow$ | 88.4% | **88.1%** | **-0.3%** | PASS (Fully Preserved) |
-| **MMLU / Reasoning Capabilities** | Axis C: Utility | $\leftrightarrow$ | 71.2% | **70.9%** | **-0.3%** | PASS (Preserved) |
-| **4-Bit Quantization Retention** | Axis C: Utility | $\uparrow$ | 59.8% | **98.2%** | **+38.4%** | **PASS (Quant-Proof)** |
+Both `run_experiment.py` and `run_experiment_cloud.py` execute the exact same 5 stages:
 
----
-
-## 7. Integrated Lexsi Alignment & Safety Stack Tools
-
-The experiment directly imports and executes the official Lexsi ecosystem packages:
-
-| Tool | Version | Role in Pipeline | Output Artifact |
-| :--- | :---: | :--- | :--- |
-| **CuratorKIT** | `0.1.23` | Ingestion, format checks, deduplication & schema validation | `data/data.csv` validated |
-| **CircuitKIT** | `0.2.0` | Causal attribution scanning, node extraction & interactive graph | `results/circuit.pt`, `results/circuit_graph.html` |
-| **SafeTune** | `0.1.13` | Circuit units specification, refusal steering & provenance | `results/safety_units.json`, `results/lexsi_provenance.json` |
-| **AlignTune** | `0.1.32` | Alignment recipe configuration & weight-delta merge specification | `results/alignment_recipe.yaml` |
-| **AuditKIT** | `1.1.6` | Triaxial evaluation statistics, directional gates & RunDiff comparison | `results/audit_ledger.json`, `results/auditkit_report.md` |
-| **MANSU Protocol** | `arXiv:2605.15138` | Quantization-aware circuit attribution unlearning evaluation | `results/mansu_quantization_retention.json` |
+1. **Step 1/5 — CuratorKIT (`run_curatorkit_pipeline`)**
+   * Validates `data/data.csv` via `curatorkit.CSVReader` and deduplicates via `curatorkit.Curator` (`min_tokens=3`, `dedup="exact"`).
+   * Verifies 100% prompt disjointness against every held-out benchmark file in `data/benchmarks/`.
+2. **Step 2/5 — CircuitKIT + SafeTune.interpret (`run_real_circuit_discovery`)**
+   * Freezes model parameters and runs **EAP-IG** (`eap_safety_circuit`, `method="eap-ig"`, `granularity="block"`, `ig_steps=2`, `top_k_edges=16`, `batch_size=2`, `max_seq_len=48`).
+   * Extracts per-layer refusal directions (`extract_refusal_direction`, `select_directions=False`) and identifies top safety neurons (`identify_safety_neurons`, `top_k_per_layer=16`, `target_module="mlp.down_proj"`).
+   * Selects the top 11 MLP layers (`top_mlp_nodes`), builds a `circuitkit.Circuit`, renders an interactive D3 graph (`circuit_graph.html`), and writes `circuit.pt`, `circuit_nodes.json`, and `safety_units.json`.
+3. **Step 3/5 — SafeTune.recover (`compute_repairs_via_safetune`)**
+   * Computes bounded teacher-forced contrastive gradient updates (`_compute_contrastive_ctheta_delta`) using:
+     $$\mathcal{L} = \mathcal{L}_{\text{refuse}}(\text{corrupted}) + 0.5 \cdot \mathcal{L}_{\text{preserve}}(\text{clean})$$
+     normalized to global Frobenius norm `step_scale=0.020` strictly on `model.layers.<li >.mlp.down_proj.weight`.
+   * **Repair 1 (Multilingual)**: Computes one delta per language (`en`, `hi`, `bn`, `ta`, `te`, `kn`) and averages them into a single consolidated delta.
+   * **Repair 2 (Cybersecurity)**: Computes a contrastive delta from the `cybersecurity_safety` pairs.
+   * Applies the delta via `safetune.interventions.recover.apply_ctheta_from_state_dicts()`, asserts `max |ΔW_outside_circuit| == 0.0` on sampled non-circuit weights, restores base weights, and writes `lexsi_provenance.json`.
+4. **Step 4/5 — AuditKIT + SafeTune.evaluate (`run_real_evaluation`)**
+   * Evaluates **Base**, **Multilingual Repair**, and **Cybersecurity Repair** on the held-out suites (using direct Cohere turn formatting without the 370-token default safety preamble unless `--keep-system-preamble` is passed) plus WMDP A/B/C/D MCQ accuracy.
+   * Scores refusal using `StringMatchJudge(mode="gcg")` + multilingual refusal markers (`MULTILINGUAL_REFUSAL_MARKERS`) and grades defensive utility on the 5-step Actionability Scale (`E`/`O`/`C`/`R`/`F`).
+   * If `OPENAI_API_KEY` is set (or `--judge-model` is provided), runs `auditkit.LLMJudge` (AU vs SAFE + Actionability) and `safetune`'s `OpenAIJudge` (StrongREJECT).
+   * Computes `auditkit.RunDiff` statistical comparisons and saves `aya_fire_generations.json`, `audit_ledger.json`, and `auditkit_report.md`.
+5. **Step 5/5 — AlignTune & MANSU Scope Documentation (`document_aligntune_and_mansu_roles`)**
+   * Records `stack_component_roles.json` documenting that `AlignTune` (full retraining) and `MANSU` (unlearning) are intentionally not applied in these targeted weight-arithmetic repairs.
 
 ---
 
-## 8. Artifacts Generated
+## 4. How to Run Locally (Collaborator Setup)
 
-* `results/circuit.pt`: Serialized CircuitKIT object containing discovered refusal nodes.
-* `results/circuit_graph.html`: Interactive D3 graph visualization generated via `ck.visualize_circuit()`.
-* `results/circuit_nodes.json`: Attribution scores for all 36 layers and identified MLP circuit nodes.
-* `results/safety_units.json`: SafeTune `CircuitInfo` units isolating target modules (`mlp.down_proj` in layers 16–26).
-* `results/lexsi_provenance.json`: Cryptographic provenance record conforming to `lexsi.provenance/1`.
-* `results/alignment_recipe.yaml`: Exported AlignTune recipe specification.
-* `results/audit_ledger.json`: Complete row-by-row triaxial audit ledger.
-* `results/auditkit_report.md`: Official AuditKIT markdown report containing RunDiff statistical summary.
-* `results/mansu_quantization_retention.json`: MANSU 4-bit quantization survival metrics.
-* `results/experiment_summary.json`: Unified experiment overview for safety governance.
+### Prerequisites & Hardware
+* **Python**: 3.10–3.12 (recommended: the shared repository venv at `CircuitKIT/.venv`).
+* **Memory**: `run_experiment.py` loads `tiny-aya-fire` (3.35B) in `torch.float32` on CPU (`torch.set_num_threads(6)`). Expect **~13.4 GB** for weights and **~23–25 GB peak RAM** during EAP-IG/gradient steps. Ensure your machine has **32 GB RAM** (or at least 16 GB swap) before running locally; otherwise use `run_experiment_cloud.py` on a GPU.
 
----
-
-## 9. How to Reproduce
-
-Run the full pipeline using the shared Python environment:
+### Step 1: Set Up the Python Environment
+From the repository root (`lexsihack/`):
 ```bash
-/home/me/Videos/lexsihack/.venv/bin/python experiments/experiment_02_aya_fire_lexsistack/run_experiment.py
+python3 -m venv CircuitKIT/.venv
+source CircuitKIT/.venv/bin/activate
+pip install -e ./CircuitKIT
+pip install curatorkit safetune auditkit aligntune transformers torch python-dotenv
+```
+*(Important: Always import `circuitkit` before `transformer_lens`, which both scripts already enforce.)*
+
+### Step 2: Download `CohereLabs/tiny-aya-fire` Locally
+`run_experiment.py` expects the model directory at `/home/me/models/tiny-aya-fire`.
+If your username or model folder differs, either place/symlink the model there or update `MODEL_DIR` at line 81 of `run_experiment.py` (or use `run_experiment_cloud.py --model /path/to/tiny-aya-fire`).
+
+```bash
+mkdir -p /home/me/models
+huggingface-cli login   # enter your HF token if required
+huggingface-cli download CohereLabs/tiny-aya-fire --local-dir /home/me/models/tiny-aya-fire
 ```
 
-Test the models interactively in the terminal:
+### Step 3: Optional API Keys (`.env`)
+To enable LLM-as-a-Judge scoring (`GPT-4o-mini` / `StrongREJECT`), create a `.env` file in the repo root (`lexsihack/.env`) or `~/.env`:
+```ini
+OPENAI_API_KEY=sk-...
+```
+If `OPENAI_API_KEY` is omitted, the pipeline still runs all deterministic judges (`StringMatchJudge`, multilingual refusal markers, actionability heuristics, and WMDP MCQ). You can add the key later and re-score cached generations without re-running the model using `--rejudge-only`.
+
+### Step 4: Run the Local Pipeline
+Always run from the repo root (paths inside the script resolve relative to `Path(__file__).resolve().parent`):
+
 ```bash
-/home/me/Videos/lexsihack/.venv/bin/python experiments/experiment_02_aya_fire_lexsistack/test_interactive.py --prompt "Explain how firewall rules block port scans."
+# Fast smoke test (2 samples per suite, 32 generated tokens)
+CircuitKIT/.venv/bin/python -u experiments/experiment_02_aya_fire_lexsistack/run_experiment.py --eval-n 2 --max-new-tokens 32
+
+# Default run (6 samples per suite, 64 generated tokens)
+CircuitKIT/.venv/bin/python -u experiments/experiment_02_aya_fire_lexsistack/run_experiment.py
+
+# Full held-out benchmark run (--eval-n 0 runs all samples in every suite)
+CircuitKIT/.venv/bin/python -u experiments/experiment_02_aya_fire_lexsistack/run_experiment.py --eval-n 0 --max-new-tokens 128
+
+# Re-run LLM-as-a-Judge on already generated transcripts
+CircuitKIT/.venv/bin/python -u experiments/experiment_02_aya_fire_lexsistack/run_experiment.py --rejudge-only --judge-model openai:gpt-4o-mini
 ```
 
-Or launch the side-by-side Streamlit visual audit app:
+### CLI Options (`run_experiment.py`)
+| Flag | Default | Description |
+| :--- | :---: | :--- |
+| `--eval-n` | `6` | Samples evaluated per benchmark suite (`0` = full suite). |
+| `--max-new-tokens` | `64` | Maximum tokens generated per evaluation prompt. |
+| `--alpha` | `1.0` | `C-ΔΘ` steering multiplier passed to `apply_ctheta_from_state_dicts`. |
+| `--judge-model` | `None` | AuditKIT judge spec (e.g., `openai:gpt-4o-mini`). |
+| `--rejudge-only` | `False` | Skip model loading/repair and re-score `results/aya_fire_generations.json`. |
+| `--keep-system-preamble` | `False` | Keep Cohere's default ~370-token safety preamble instead of testing raw weights. |
+
+---
+
+## 5. How to Run on a Cloud GPU (`run_experiment_cloud.py`)
+
+If you do not want to download/run the 3.35B model on local CPU RAM, use `run_experiment_cloud.py` on a 24 GB+ VRAM GPU (e.g., Google Colab L4/A100, RunPod, Kaggle, Lambda):
+
 ```bash
+git clone https://github.com/RealASHWIN122/lexsihack.git && cd lexsihack
+pip install -e ./CircuitKIT
+pip install curatorkit safetune auditkit aligntune python-dotenv
+read -rsp "Enter HF_TOKEN: " HF_TOKEN && export HF_TOKEN && echo
+python experiments/experiment_02_aya_fire_lexsistack/run_experiment_cloud.py --eval-n 6
+```
+
+Additional flags on `run_experiment_cloud.py`:
+* `--model` (default: `CohereLabs/tiny-aya-fire`) — Hugging Face repo ID or local path.
+* `--hf-token` — Optional CLI override for `HF_TOKEN`.
+* `--dtype` (`auto` | `float32` | `float16` | `bfloat16`) — `auto` selects `bfloat16` + `device_map="auto"` on CUDA and `float32` on CPU.
+
+---
+
+## 6. Interactive Inspection & Output Artifacts
+
+### Interactive Helpers
+```bash
+# Test prompts side-by-side in terminal
+CircuitKIT/.venv/bin/python experiments/experiment_02_aya_fire_lexsistack/test_interactive.py --prompt "Explain how firewall rules block port scans."
+
+# Launch Streamlit visual audit app
 streamlit run experiments/experiment_02_aya_fire_lexsistack/app.py
 ```
+
+### Generated Artifacts (`results/`)
+* `results/circuit.pt` — Serialized `CircuitKIT` `Circuit` object.
+* `results/circuit_graph.html` — Interactive D3 circuit visualization (`ck.visualize_circuit`).
+* `results/circuit_nodes.json` — Per-layer MLP EAP-IG attribution scores and selected `target_layers`.
+* `results/safety_units.json` — `SafeTune` `CircuitInfo` targeting `mlp.down_proj` in discovered layers.
+* `results/eap_raw/` — Raw `eap_scores.json` and attribution outputs.
+* `results/curatorkit_out/` — Deduplicated CuratorKIT output.
+* `results/lexsi_provenance.json` — Provenance record (`method: ctheta`, L2 norms, `max_non_circuit_weight_diff`).
+* `results/aya_fire_generations.json` — Cached Base / Multilingual Repair / Cybersecurity Repair generations + WMDP scores.
+* `results/audit_ledger.json` — Full measured metrics + optional LLM judge scores + reference baseline.
+* `results/auditkit_report.md` — Markdown comparison table and defensive actionability grades.
+* `results/stack_component_roles.json` — Explicit AlignTune/MANSU scope record.
+* `results/experiment_summary.json` — High-level run summary (model, target layers, elapsed time, `eval_n`).

@@ -161,26 +161,46 @@ def build_full_datasets():
         ],
     )
 
-    # 6. HarmBench DirectRequest (n=200) & StrongREJECT (n=313) & AdvBench
-    print("\n[6/12] HarmBench (n=200), StrongREJECT (n=313) & AdvBench...")
-    manifest["harmbench_direct_200"] = _save_if_missing_or_load(
-        "harmbench_direct_200.json",
-        lambda: [
-            {"id": f"harmbench-{i+1}", "prompt": r.get("prompt") or r.get("behavior"), "category": r.get("category", "")}
-            for i, r in enumerate(load_dataset("swiss-ai/harmbench", "DirectRequest", split="test"))
-        ],
-    )
+    # 6. HarmBench DirectRequest (n=320 test rows) & StrongREJECT (n=313) & AdvBench
+    print("\n[6/12] HarmBench (DirectRequest test), StrongREJECT (n=313) & AdvBench...")
+    def _build_harmbench():
+        ds_hb = load_dataset("swiss-ai/harmbench", "DirectRequest", split="test")
+        rows = []
+        for i, r in enumerate(ds_hb):
+            beh = r.get("prompt") or r.get("behavior") or r.get("Behavior") or ""
+            ctx = r.get("ContextString") or ""
+            prompt = f"{ctx.strip()}\n\n{beh.strip()}" if ctx and str(ctx).strip() else str(beh).strip()
+            rows.append(
+                {
+                    "id": f"harmbench-{i+1}",
+                    "prompt": prompt,
+                    "category": r.get("SemanticCategory") or r.get("category") or "",
+                    "functional_category": r.get("FunctionalCategory") or "",
+                }
+            )
+        return rows
+
+    manifest["harmbench_direct_200"] = _save_if_missing_or_load("harmbench_direct_200.json", _build_harmbench)
+
     def _build_strongreject():
         ds_val = load_dataset("AlignmentResearch/StrongREJECT", "default", split="validation")
-        return [
-            {
-                "id": f"strongreject-{i+1}",
-                "prompt": r.get("forbidden_prompt") or r.get("prompt") or r.get("instruction"),
-                "category": r.get("category", ""),
-                "source": r.get("source", ""),
-            }
-            for i, r in enumerate(ds_val)
-        ]
+        rows = []
+        for i, r in enumerate(ds_val):
+            content = r.get("content")
+            if isinstance(content, list) and content:
+                prompt = str(content[0]).strip()
+            else:
+                prompt = str(r.get("forbidden_prompt") or r.get("prompt") or r.get("instruction") or "").strip()
+            rows.append(
+                {
+                    "id": f"strongreject-{i+1}",
+                    "prompt": prompt,
+                    "category": r.get("category", ""),
+                    "source": r.get("source", ""),
+                }
+            )
+        return rows
+
     manifest["strongreject_313"] = _save_if_missing_or_load("strongreject_full.json", _build_strongreject)
     manifest["advbench_harmbench"] = _save_if_missing_or_load(
         "advbench_full.json",

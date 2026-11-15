@@ -42,17 +42,28 @@ experiments/
 │       ├── circuit_graph.html
 │       └── experiment_summary.json
 │
-└── experiment_03_adversarial_safety_benchmark/ # Aya SafeCal Multilingual Safety Benchmark
+└── experiment_03/                             # Multilingual Safety Benchmark & Targeted Model Repair
     ├── README.md
+    ├── app.py
     ├── run_experiment.py
+    ├── run_pair04_attribution.py
+    ├── apply_circuit_repair.py
     ├── data/
     │   ├── aya_safecal_bench.jsonl
     │   ├── data.csv
+    │   ├── DATASET_CARD.md
     │   └── task.yaml
+    ├── reports/
+    │   └── AYA_SAFETY_BENCHMARK_REPORT.md
     └── results/
+        ├── audit_ledger.json
         ├── aya_raw_evaluations.jsonl
         ├── aya_summary_metrics.csv
-        └── aya_summary_metrics.json
+        ├── aya_summary_metrics.json
+        ├── circuit.pt
+        ├── circuit_graph.html
+        ├── circuit_nodes.json
+        └── circuit_scores.json
 ```
 
 ## Quick Start: Starting a New Experiment

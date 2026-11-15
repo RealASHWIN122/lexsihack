@@ -217,9 +217,9 @@ def main():
         print(f"{comp:<12} | {score:<8.4f} | {layer_num:<8} | {head_num:<6} | {desc}")
 
     print("=" * 86)
-    print(f"✓ Circuit artifact saved:  experiments/experiment_03_adversarial_safety_benchmark/results/circuit.pt")
-    print(f"✓ JSON scores saved:      experiments/experiment_03_adversarial_safety_benchmark/results/circuit_nodes.json")
-    print(f"✓ D3 interactive graph:   experiments/experiment_03_adversarial_safety_benchmark/results/circuit_graph.html")
+    print(f"✓ Circuit artifact saved:  {circuit_pt_path}")
+    print(f"✓ JSON scores saved:      {circuit_nodes_path}")
+    print(f"✓ D3 interactive graph:   {circuit_viz_path}")
     print("=" * 86)
 
 

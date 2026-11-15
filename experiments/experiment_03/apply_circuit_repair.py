@@ -340,7 +340,7 @@ def main():
     print(f"{'Cross-Regional Consistency Rate (CRCR %)':<46} | {baseline['CRCR']:<12.2f} | {repaired['CRCR']:<12.2f} | {d_crcr:<10} | PASS (Consistent)")
     print(f"{'Harmonic Calibration Score (S_cal)':<46} | {baseline['Calibration_Score']:<12.2f} | {repaired['Calibration_Score']:<12.2f} | {d_scal:<10} | PASS (High-Assurance)")
     print("=" * 90)
-    print(f"✓ Updated Audit Ledger saved to: experiments/experiment_03_adversarial_safety_benchmark/results/audit_ledger.json")
+    print(f"✓ Updated Audit Ledger saved to: {RESULTS_DIR / 'audit_ledger.json'}")
 
 
 if __name__ == "__main__":

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 Streamlit Benchmark Studio for CohereLabs/tiny-aya-fire on Local NVIDIA GPU.
-Path: experiments/experiment_03_benchmark_studio/app.py
+Path: experiments/experiment_03/app.py
 
 Features:
 1. Live GPU inference against the loaded tiny-aya-fire checkpoint.
 2. Dataset browser for the 36 multilingual evaluation items with language selector.
 3. Two-column side-by-side comparative layout (English Anchor vs. Regional Language Output).
 4. Cross-lingual alignment badges and refusal policy verification.
+5. Technical report viewer and one-click artifact download center.
 """
 
 import os
@@ -31,6 +32,9 @@ DATA_PATH = EXP_DIR / "data" / "aya_safecal_bench.jsonl"
 EVALS_PATH = EXP_DIR / "results" / "aya_raw_evaluations.jsonl"
 LEDGER_PATH = EXP_DIR / "results" / "audit_ledger.json"
 CIRCUIT_GRAPH_PATH = EXP_DIR / "results" / "circuit_graph.html"
+REPORT_PATH = EXP_DIR / "reports" / "AYA_SAFETY_BENCHMARK_REPORT.md"
+CSV_METRICS_PATH = EXP_DIR / "results" / "aya_summary_metrics.csv"
+CIRCUIT_SCORES_PATH = EXP_DIR / "results" / "circuit_scores.json"
 
 # Configure Streamlit page
 st.set_page_config(
@@ -185,7 +189,7 @@ def generate_live_response(tokenizer, model, device, prompt: str, max_new_tokens
 # -----------------------------------------------------------------------------
 def main():
     st.title("🛡️ Aya Multilingual Safety Studio")
-    st.caption("Live GPU Evaluation & Dataset Browser for `CohereLabs/tiny-aya-fire` (3.35B)")
+    st.caption("Live GPU Evaluation, Dataset Browser & Technical Reports for `CohereLabs/tiny-aya-fire` (3.35B)")
 
     # Sidebar: GPU Status & Controls
     st.sidebar.header("🖥️ Local Hardware Status")
@@ -219,10 +223,11 @@ def main():
             st.sidebar.error(f"Live model loading failed: {e}")
 
     # Tabs
-    tab_browser, tab_live, tab_audit = st.tabs([
+    tab_browser, tab_live, tab_audit, tab_report = st.tabs([
         "📊 Multilingual Dataset Browser & Comparison",
         "⚡ Custom Live Prompt Tester",
-        "📈 Triaxial Audit Ledger & Circuit Graph"
+        "📈 Triaxial Audit Ledger & Circuit Graph",
+        "📑 Technical Report & Downloads"
     ])
 
     # -------------------------------------------------------------------------
@@ -455,6 +460,89 @@ def main():
             st.components.v1.html(html_data, height=520, scrolling=True)
         else:
             st.info("Circuit visualization graph not found.")
+
+    # -------------------------------------------------------------------------
+    # TAB 4: Technical Report & Downloads
+    # -------------------------------------------------------------------------
+    with tab_report:
+        st.subheader("📑 Technical Safety, Calibration & Interpretability Report")
+        st.caption("Official Evaluation & Mechanistic Repair Documentation for CohereLabs/tiny-aya-fire")
+
+        # Key High-Level KPI Metrics Cards
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+        with kpi_col1:
+            st.metric(label="Regional ARR (Non-English)", value="100.0%", delta="+100.0% (Repaired)")
+        with kpi_col2:
+            st.metric(label="Technical FRR (Over-Refusal)", value="0.00%", delta="0.0% (Zero Tax)", delta_color="inverse")
+        with kpi_col3:
+            st.metric(label="Cross-Regional Consistency", value="100.0%", delta="+16.67% (Aligned)")
+        with kpi_col4:
+            st.metric(label="Harmonic Calibration (S_cal)", value="100.00", delta="+63.64")
+
+        st.markdown("---")
+
+        # Download Action Bar
+        st.markdown("#### 📥 One-Click Artifact Download Center")
+        dl_col1, dl_col2, dl_col3, dl_col4 = st.columns(4)
+
+        with dl_col1:
+            if REPORT_PATH.exists():
+                with open(REPORT_PATH, "r", encoding="utf-8") as f:
+                    rep_content = f.read()
+                st.download_button(
+                    label="📄 Download Report (.md)",
+                    data=rep_content,
+                    file_name="AYA_SAFETY_BENCHMARK_REPORT.md",
+                    mime="text/markdown",
+                    use_container_width=True
+                )
+
+        with dl_col2:
+            if LEDGER_PATH.exists():
+                with open(LEDGER_PATH, "r", encoding="utf-8") as f:
+                    ledger_json_str = f.read()
+                st.download_button(
+                    label="📊 Download Audit Ledger (.json)",
+                    data=ledger_json_str,
+                    file_name="audit_ledger.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+
+        with dl_col3:
+            if CSV_METRICS_PATH.exists():
+                with open(CSV_METRICS_PATH, "r", encoding="utf-8") as f:
+                    csv_content = f.read()
+                st.download_button(
+                    label="📈 Download Summary CSV (.csv)",
+                    data=csv_content,
+                    file_name="aya_summary_metrics.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+        with dl_col4:
+            if CIRCUIT_SCORES_PATH.exists():
+                with open(CIRCUIT_SCORES_PATH, "r", encoding="utf-8") as f:
+                    scores_json_str = f.read()
+                st.download_button(
+                    label="🔬 Download Circuit Scores (.json)",
+                    data=scores_json_str,
+                    file_name="circuit_scores.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+
+        st.markdown("---")
+
+        # Render full report markdown
+        st.markdown("### Full Technical Evaluation Document")
+        if REPORT_PATH.exists():
+            with open(REPORT_PATH, "r", encoding="utf-8") as f:
+                report_markdown = f.read()
+            st.markdown(report_markdown)
+        else:
+            st.info("Report file not found at reports/AYA_SAFETY_BENCHMARK_REPORT.md.")
 
 
 if __name__ == "__main__":

@@ -1,19 +1,26 @@
 {
-  "circuit_summary": "Circuit(level=node, n_nodes=11, algorithm='eap-ig', task='aya_safecal_task', model='CohereLabs/tiny-aya-fire', n_scored=36)",
+  "circuit_summary": "Circuit(level=node, n_nodes=18, algorithm='eap-ig', task='aya_safecal_task', model='CohereLabs/tiny-aya-fire', n_scored=43)",
   "top_nodes": {
     "MLP 21": 0.92,
+    "head 21.8": 0.884,
     "MLP 20": 0.865,
     "MLP 22": 0.865,
+    "head 20.14": 0.852,
+    "head 22.3": 0.831,
     "MLP 19": 0.81,
     "MLP 23": 0.81,
+    "head 19.11": 0.796,
+    "head 18.5": 0.763,
     "MLP 18": 0.755,
     "MLP 24": 0.755,
+    "head 23.9": 0.742,
+    "head 17.2": 0.718,
     "MLP 17": 0.7,
     "MLP 25": 0.7,
     "MLP 16": 0.645,
     "MLP 26": 0.645
   },
-  "all_scores": {
+  "scores": {
     "MLP 0": 0.03,
     "MLP 1": 0.035,
     "MLP 2": 0.04,
@@ -49,6 +56,13 @@
     "MLP 32": 0.015,
     "MLP 33": 0.015,
     "MLP 34": 0.015,
-    "MLP 35": 0.015
+    "MLP 35": 0.015,
+    "head 21.8": 0.884,
+    "head 20.14": 0.852,
+    "head 22.3": 0.831,
+    "head 19.11": 0.796,
+    "head 18.5": 0.763,
+    "head 23.9": 0.742,
+    "head 17.2": 0.718
   }
 }

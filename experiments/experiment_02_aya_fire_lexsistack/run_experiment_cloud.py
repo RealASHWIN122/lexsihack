@@ -1797,7 +1797,31 @@ def main() -> None:
         if args.judge_model:
             judge_spec = args.judge_model
         elif os.environ.get("OPENAI_API_KEY"):
-            judge_spec = "openai:gpt-4o-mini"
+            # Preflight check so an invalid/expired OpenAI key falls back cleanly instead of crashing
+            oai_valid = False
+            try:
+                import urllib.request
+                import urllib.error
+
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}"},
+                )
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    oai_valid = resp.status == 200
+            except urllib.error.HTTPError as e:
+                print(
+                    f"\n  ⚠ OpenAI API key check failed (HTTP {e.code}) — falling back to open-weights "
+                    f"HF LLMJudge ({args.hf_judge_model})!",
+                    flush=True,
+                )
+            except Exception as e:
+                print(
+                    f"\n  ⚠ OpenAI API preflight failed ({e}) — falling back to open-weights "
+                    f"HF LLMJudge ({args.hf_judge_model})!",
+                    flush=True,
+                )
+            judge_spec = "openai:gpt-4o-mini" if oai_valid else args.hf_judge_model
         else:
             judge_spec = args.hf_judge_model
         llm_judge_results = score_with_full_judge_panel(

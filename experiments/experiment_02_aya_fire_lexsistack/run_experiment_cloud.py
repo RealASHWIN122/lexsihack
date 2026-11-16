@@ -1175,9 +1175,9 @@ def _score_items_with_llm_judge(
     items: List[Dict[str, Any]],
     is_hf_judge: bool,
     max_workers: int = 12,
-    hf_batch_size: int = 16,
+    hf_batch_size: int = 4,
 ) -> List[Any]:
-    """Run AuditKIT LLMJudge using concurrent workers for API judges or chunked batches for HF judges."""
+    """Run AuditKIT LLMJudge using concurrent workers for API judges or VRAM-safe chunked batches for HF judges."""
     if not items:
         return []
     if not is_hf_judge and max_workers > 1:
@@ -1194,8 +1194,10 @@ def _score_items_with_llm_judge(
     if is_hf_judge:
         model = judge._model()
         scores: List[Any] = []
-        for start in range(0, len(items), hf_batch_size):
-            chunk = items[start : start + hf_batch_size]
+        pos = 0
+        cur_bs = max(1, hf_batch_size)
+        while pos < len(items):
+            chunk = items[pos : pos + cur_bs]
             reqs = [
                 Request(
                     prompt=judge._assemble(judge._render(ak.Sample(input=r["prompt"]), r["response"])),
@@ -1203,10 +1205,26 @@ def _score_items_with_llm_judge(
                 )
                 for r in chunk
             ]
-            res_list = model.generate(reqs)
-            for res in res_list:
-                text = res.completions[0].text if res and getattr(res, "completions", None) else ""
-                scores.append(judge._parse(text or ""))
+            oom_happened = False
+            try:
+                res_list = model.generate(reqs)
+                for res in res_list:
+                    text = res.completions[0].text if res and getattr(res, "completions", None) else ""
+                    scores.append(judge._parse(text or ""))
+                pos += len(chunk)
+            except torch.cuda.OutOfMemoryError:
+                oom_happened = True
+            if oom_happened:
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                if cur_bs == 1:
+                    raise RuntimeError("CUDA OOM even at batch_size=1 during HF LLMJudge")
+                cur_bs = max(1, cur_bs // 2)
+                print(f"      ⚠ CUDA OOM in HF judge — reduced batch_size to {cur_bs}", flush=True)
+                continue
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
         return scores
 
     return [judge.judge(ak.Sample(input=r["prompt"]), r["response"]) for r in items]
@@ -1237,9 +1255,9 @@ def _score_strongreject_openai(
 def _score_items_with_guard(
     guard: ak.GuardJudge,
     items: List[Dict[str, Any]],
-    batch_size: int = 16,
+    batch_size: int = 4,
 ) -> List[Any]:
-    """Run AuditKIT GuardJudge in batches when using raw-prompt profile (WildGuard)."""
+    """Run AuditKIT GuardJudge in VRAM-safe batches when using raw-prompt profile (WildGuard)."""
     if not items:
         return []
     if "build_prompt" not in guard._profile:
@@ -1247,8 +1265,10 @@ def _score_items_with_guard(
     model = guard._resolve()
     base = {"temperature": 0.0, "max_tokens": guard._max_tokens, "apply_chat_template": False}
     scores: List[Any] = []
-    for start in range(0, len(items), batch_size):
-        chunk = items[start : start + batch_size]
+    pos = 0
+    cur_bs = max(1, batch_size)
+    while pos < len(items):
+        chunk = items[pos : pos + cur_bs]
         reqs = [
             Request(
                 prompt=guard._profile["build_prompt"](r["prompt"], r["response"], guard._assess),
@@ -1256,11 +1276,27 @@ def _score_items_with_guard(
             )
             for r in chunk
         ]
-        res_list = model.generate(reqs)
-        for res in res_list:
-            text = res.completions[0].text if res and getattr(res, "completions", None) else ""
-            value, meta = guard._profile["parse"](text or "")
-            scores.append(type("GuardScore", (), {"value": value, "metadata": meta})())
+        oom_happened = False
+        try:
+            res_list = model.generate(reqs)
+            for res in res_list:
+                text = res.completions[0].text if res and getattr(res, "completions", None) else ""
+                value, meta = guard._profile["parse"](text or "")
+                scores.append(type("GuardScore", (), {"value": value, "metadata": meta})())
+            pos += len(chunk)
+        except torch.cuda.OutOfMemoryError:
+            oom_happened = True
+        if oom_happened:
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            if cur_bs == 1:
+                raise RuntimeError("CUDA OOM even at batch_size=1 during WildGuard")
+            cur_bs = max(1, cur_bs // 2)
+            print(f"      ⚠ CUDA OOM in WildGuard — reduced batch_size to {cur_bs}", flush=True)
+            continue
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     return scores
 
 

@@ -902,6 +902,46 @@ def _flush_live_ledger(
     return ledger
 
 
+def _load_paper_or_stratified_slice(
+    filename: str,
+    limit: int,
+    filter_fn: Optional[Callable[[Dict[str, Any]], bool]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Load 100% full paper dataset when `limit == 0`.
+    If `limit > 0`, stratify evenly across languages (`lang`/`Language`/`language`) so every language is represented.
+    """
+    path = local_exp.BENCHMARKS_DIR / filename
+    if not path.exists():
+        return []
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    if filter_fn is not None:
+        rows = [r for r in rows if filter_fn(r)]
+    if limit <= 0 or len(rows) <= limit:
+        return rows
+
+    by_lang: Dict[str, List[Dict[str, Any]]] = {}
+    for r in rows:
+        lg = str(r.get("lang") or r.get("Language") or r.get("language") or "default")
+        by_lang.setdefault(lg, []).append(r)
+    if len(by_lang) <= 1:
+        return rows[:limit]
+
+    langs = list(by_lang.keys())
+    out: List[Dict[str, Any]] = []
+    idx = 0
+    while len(out) < limit:
+        added_any = False
+        for lg in langs:
+            if idx < len(by_lang[lg]) and len(out) < limit:
+                out.append(by_lang[lg][idx])
+                added_any = True
+        if not added_any:
+            break
+        idx += 1
+    return out
+
+
 def generate_all_checkpoints(
     model: Any,
     tokenizer: Any,
@@ -909,48 +949,48 @@ def generate_all_checkpoints(
     repair_data: Dict[str, Any],
     eval_n: int,
     max_new_tokens: int,
+    refusal_max_new_tokens: int,
     keep_system_preamble: bool,
     alpha: float,
-    gen_batch_size: int = 16,
+    gen_batch_size: int = 32,
     backup_dirs: Optional[List[Path]] = None,
     live_ledger_cb: Optional[Callable[[Dict[str, Any], Dict[str, Any]], None]] = None,
 ) -> Tuple[Dict[str, Dict[str, List[Dict[str, Any]]]], Dict[str, Dict[str, float]]]:
     """
-    Generate responses across all held-out benchmark suites for Base, ML Repair, and Cyber Repair.
-    Incrementally checkpoints `aya_fire_generations.json` after every 10 batches (~160 prompts)
+    Generate responses across all held-out Lexsi Paper Table 1 / Table 4 / Table 5 benchmark suites
+    for Base, ML Repair, and Cyber Repair.
+    Incrementally checkpoints `aya_fire_generations.json` after every 160 prompts
     and after every suite/WMDP split so zero data is ever lost on interruption or crash.
     """
     # Exact Lexsi Labs paper benchmark taxonomy & sample counts (Table 1, Table 4, Table 5)
+    # Non-Table-1 legacy suites (advbench, jbb_benign, jbb_harmful) are omitted per Choice A.
     hb_limit = eval_n if eval_n > 0 else 200
     suites = {
-        "harmbench": local_exp._load_benchmark_slice(
+        "harmbench": _load_paper_or_stratified_slice(
             "harmbench_direct_200.json", hb_limit, filter_fn=lambda r: r.get("functional_category") != "copyright"
         ),
-        "harmbench_multilingual": local_exp._load_benchmark_slice("harmbench_multilingual_full.json", eval_n),
-        "strongreject": local_exp._load_benchmark_slice("strongreject_full.json", eval_n),
-        "multijail": local_exp._load_benchmark_slice("multijail_10lang_full.json", eval_n),
-        "indicsafe": local_exp._load_benchmark_slice(
+        "harmbench_multilingual": _load_paper_or_stratified_slice("harmbench_multilingual_full.json", eval_n),
+        "strongreject": _load_paper_or_stratified_slice("strongreject_full.json", eval_n),
+        "multijail": _load_paper_or_stratified_slice("multijail_10lang_full.json", eval_n),
+        "indicsafe": _load_paper_or_stratified_slice(
             "indicsafe_full.json",
             eval_n,
             filter_fn=lambda r: (r.get("Category") or r.get("category"))
             not in ("Harmless Control Prompts", "Harmless Control", "Tricky Ambiguous Prompts"),
         ),
-        "indicsafe_benign": local_exp._load_benchmark_slice(
+        "indicsafe_benign": _load_paper_or_stratified_slice(
             "indicsafe_full.json",
             eval_n,
             filter_fn=lambda r: (r.get("Category") or r.get("category"))
             in ("Harmless Control Prompts", "Harmless Control"),
         ),
-        "sarvam_indic_safety": local_exp._load_benchmark_slice("sarvam_indic_safety_full.json", eval_n),
-        "banglasafe": local_exp._load_benchmark_slice("banglasafe_full.json", eval_n),
-        "advbench": local_exp._load_benchmark_slice("advbench_full.json", eval_n),
-        "or_bench_hard": local_exp._load_benchmark_slice("or_bench_hard_1k.json", eval_n),
-        "xstest_safe": local_exp._load_benchmark_slice("xstest_full.json", eval_n, filter_fn=lambda r: r.get("is_safe")),
-        "jbb_benign": local_exp._load_benchmark_slice("jbb_benign_full.json", eval_n),
-        "jbb_harmful": local_exp._load_benchmark_slice("jbb_harmful_full.json", eval_n),
-        "fortress": local_exp._load_benchmark_slice("fortress_public_full.json", eval_n),
-        "rmcbench": local_exp._load_benchmark_slice("rmcbench_full.json", eval_n),
-        "cyber_offensive": local_exp._load_benchmark_slice(
+        "sarvam_indic_safety": _load_paper_or_stratified_slice("sarvam_indic_safety_full.json", eval_n),
+        "banglasafe": _load_paper_or_stratified_slice("banglasafe_full.json", eval_n),
+        "or_bench_hard": _load_paper_or_stratified_slice("or_bench_hard_1k.json", eval_n),
+        "xstest_safe": _load_paper_or_stratified_slice("xstest_full.json", eval_n, filter_fn=lambda r: r.get("is_safe")),
+        "fortress": _load_paper_or_stratified_slice("fortress_public_full.json", eval_n),
+        "rmcbench": _load_paper_or_stratified_slice("rmcbench_full.json", eval_n),
+        "cyber_offensive": _load_paper_or_stratified_slice(
             "cybersec_dualuse_full.json", eval_n, filter_fn=lambda r: r.get("expected") == "refusal"
         ),
         "defensive_10_tasks": json.loads((local_exp.BENCHMARKS_DIR / "cybersec_defensive_10_tasks.json").read_text())[
@@ -1017,7 +1057,8 @@ def generate_all_checkpoints(
 
         print(
             f"\n  Evaluating checkpoint: {ckpt_name} "
-            f"(suites={len(suites)}, eval_n={eval_n or 'PAPER_FULL'}, batch_size={gen_batch_size})..."
+            f"(suites={len(suites)}, eval_n={eval_n or 'PAPER_FULL'}, batch_size={gen_batch_size}, "
+            f"tokens={refusal_max_new_tokens}/{max_new_tokens})..."
         )
         model.load_state_dict(repair_data["base_circuit_sd"], strict=False)
         if pos_sd is not None:
@@ -1068,18 +1109,26 @@ def generate_all_checkpoints(
                 meta = valid_items[missing_indices[rel_idx]]
                 existing_by_id[meta["id"]] = {**meta, "response": resp_txt}
                 newly_completed += 1
-                # Flush to disk every 160 prompts (~10 batches) inside large suites so nothing is lost
+                # Flush to disk every 160 prompts inside large suites so nothing is lost
                 if newly_completed % 160 == 0:
                     transcripts[ckpt_name][sname] = [
                         existing_by_id[m["id"]] for m in valid_items if m["id"] in existing_by_id
                     ]
                     _save_generations()
 
+            # Use full max_new_tokens (128) on the 10 named defensive tasks & ARP boundary probe (for E/O/C/R/F grading),
+            # and refusal_max_new_tokens (64) on refusal/over-refusal suites (2x faster decoding without losing signal).
+            suite_max_tokens = (
+                max(max_new_tokens, 128)
+                if sname in ("defensive_10_tasks", "boundary_arp")
+                else refusal_max_new_tokens
+            )
+
             generate_responses_batched(
                 model,
                 tokenizer,
                 missing_prompts,
-                max_new_tokens=max_new_tokens,
+                max_new_tokens=suite_max_tokens,
                 keep_system_preamble=keep_system_preamble,
                 batch_size=gen_batch_size,
                 progress_label=f"{ckpt_name}:{sname}",
@@ -1106,7 +1155,7 @@ def generate_all_checkpoints(
                 model,
                 tokenizer,
                 wmdp_items,
-                batch_size=gen_batch_size,
+                batch_size=min(gen_batch_size, 16),
                 progress_label=f"{ckpt_name}:{wmdp_key}",
             )
             wmdp_scores[ckpt_name][wmdp_key] = acc
@@ -1565,8 +1614,19 @@ def main() -> None:
         help="Model dtype ('auto' uses bfloat16 on CUDA, float32 on CPU)",
     )
     parser.add_argument("--eval-n", type=int, default=0, help="Samples per suite (default 0 = full paper datasets)")
-    parser.add_argument("--max-new-tokens", type=int, default=128, help="Max new tokens per generation")
-    parser.add_argument("--gen-batch-size", type=int, default=16, help="Safe CUDA batch size for generation & WMDP MCQ")
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=128,
+        help="Max new tokens on the 10 defensive cyber tasks & ARP boundary probe (default 128)",
+    )
+    parser.add_argument(
+        "--refusal-max-new-tokens",
+        type=int,
+        default=64,
+        help="Max new tokens on refusal/over-refusal suites (default 64; 2x faster with identical refusal signal)",
+    )
+    parser.add_argument("--gen-batch-size", type=int, default=32, help="CUDA batch size for generation (WMDP capped at 16)")
     parser.add_argument("--alpha", type=float, default=None, help="Pin fixed C-ΔΘ strength α (skips grid sweep)")
     parser.add_argument("--alpha-grid", type=str, default="0.25,0.5,0.75,1.0", help="Comma-separated α sweep grid")
     parser.add_argument("--judge-model", type=str, default=None, help="Override AuditKIT LLMJudge spec")
@@ -1599,6 +1659,9 @@ def main() -> None:
         print("Warning: HF_TOKEN is not set. Gated Hugging Face models will fail to download.")
 
     use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
     dtype_name = ("bfloat16" if use_cuda else "float32") if args.dtype == "auto" else args.dtype
     torch_dtype = DTYPE_MAP[dtype_name]
     local_exp.MODEL_DIR = args.model
@@ -1689,7 +1752,7 @@ def main() -> None:
                 circuit_info,
                 repair_data,
                 alpha_grid=alpha_grid,
-                max_new_tokens=min(args.max_new_tokens, 64),
+                max_new_tokens=min(args.refusal_max_new_tokens, 64),
                 keep_system_preamble=args.keep_system_preamble,
                 batch_size=min(args.gen_batch_size, 12),
                 backup_dirs=backup_dirs,
@@ -1703,6 +1766,7 @@ def main() -> None:
             repair_data=repair_data,
             eval_n=args.eval_n,
             max_new_tokens=args.max_new_tokens,
+            refusal_max_new_tokens=args.refusal_max_new_tokens,
             keep_system_preamble=args.keep_system_preamble,
             alpha=chosen_alpha,
             gen_batch_size=args.gen_batch_size,

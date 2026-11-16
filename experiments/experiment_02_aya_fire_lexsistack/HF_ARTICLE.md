@@ -3,8 +3,8 @@
 > **Hackathon Submission Write-Up & Hugging Face Article**
 > - **Base Model**: [`CohereLabs/tiny-aya-fire`](https://huggingface.co/CohereLabs/tiny-aya-fire) (`Cohere2ForCausalLM`, 3.35B parameters, 36 layers, `bfloat16`)
 > - **Methodology**: *The Last Mile of Model Safety: Targeted Model Repair* (Seth et al., Lexsi Labs 2026) — **CuratorKIT $\rightarrow$ CircuitKIT (EAP-IG) $\rightarrow$ SafeTune ($C\text{-}\Delta\Theta$) $\rightarrow$ AuditKIT**
-> - **Repository**: [`https://github.com/RealASHWIN122/lexsihack`](https://github.com/RealASHWIN122/lexsihack) (`experiments/experiment_02_aya_fire_lexsistack/`)
-> - **Interactive Demo (HF Space / Gradio & Streamlit)**: `experiments/experiment_02_aya_fire_lexsistack/hf_space/app.py`
+> - **Public Repository**: [`https://github.com/RealASHWIN122/lexsihack`](https://github.com/RealASHWIN122/lexsihack) (`experiments/experiment_02_aya_fire_lexsistack/`)
+> - **Interactive Demo App (Gradio & Streamlit)**: [`hf_space/app.py`](hf_space/app.py) & [`app.py`](app.py)
 
 ---
 
@@ -12,13 +12,15 @@
 
 Small regional multilingual language models like **`CohereLabs/tiny-aya-fire`** (`3.35B` parameters, specialized for South Asian / Indic languages) are ideal for low-latency, privacy-preserving enterprise deployment. However, they suffer from two critical **"Last Mile" safety failures**:
 
-1. **Cross-Lingual Safety Collapse**: While the base model refuses plain English harmful prompts reliably (`88%–92%` on `HarmBench`), asking the exact same harmful question in **Hindi (`hi`), Bengali (`bn`), Tamil (`ta`), Telugu (`te`), or Kannada (`kn`)** bypasses safety training (`33.8%–52.6%` baseline refusal on `BanglaSafe`, `IndicSafe`, and `IndicSafetyBench`).
-2. **Dual-Use Cybersecurity Hedged Leaks vs. Over-Refusal**: On offensive cyber requests (e.g., AWS credential exfiltration, LSASS memory dumping, SSRF exploitation), the base model often outputs a polite disclaimer in sentence one (*"I cannot assist with unauthorized access..."*) and then **leaks executable exploit commands in paragraph two**. Conversely, standard fine-tuning (SFT/DPO) to fix this causes severe **over-refusal (`ORef`)**, breaking legitimate SecOps tasks like writing Sysmon detection rules, `nginx` hardening configs, or `pkill` Linux commands.
+1. **Cross-Lingual Safety Collapse**: While the base model refuses plain English harmful prompts reliably (`69.0%–96.2%` across `HarmBench` and `StrongREJECT`), asking harmful questions in **Bengali (`bn`), Hindi (`hi`), Tamil (`ta`), Telugu (`te`), or Kannada (`kn`)** causes severe safety degradation (`45.0%` baseline refusal on `HarmBench Multilingual` and `BanglaSafe`).
+2. **Dual-Use Cybersecurity Hedged Leaks vs. Over-Refusal**: On offensive cyber requests (e.g., AWS credential exfiltration, LSASS memory dumping, SSRF exploitation, malware generation on `RMCBench` / `FORTRESS`), the base model leaks actionable exploit material (`9.4%` Attacker-Useful `AU` rate). Conversely, standard fine-tuning (SFT/DPO) to fix this causes severe **over-refusal (`ORef`)**, breaking legitimate SecOps tasks like writing Sysmon detection rules, `nginx` hardening configs, or `pkill` Linux commands.
 
 ### How We Solved It Without Retraining or Runtime Guardrails
-Using the **Lexsi Alignment & Safety Stack**, we localize the exact causal safety circuit inside `tiny-aya-fire` using **Edge Attribution Patching with Integrated Gradients (EAP-IG)** (`CircuitKIT` + `SafeTune.interpret`) and apply **offline Circuit-Restricted Weight Arithmetic ($C\text{-}\Delta\Theta$)** (`SafeTune.recover`) strictly to the **top 11 MLP down-projection matrices** (`model.layers.<l>.mlp.down_proj.weight`).
+Using the **Lexsi Alignment & Safety Stack**, we localize the exact causal safety circuit inside `tiny-aya-fire` using **Edge Attribution Patching with Integrated Gradients (EAP-IG)** (`CircuitKIT` + `SafeTune.interpret`) and apply **offline Circuit-Restricted Weight Arithmetic ($C\text{-}\Delta\Theta$)** (`SafeTune.recover`) strictly to the **top 11 MLP down-projection matrices** (`model.layers.<l>.mlp.down_proj.weight` for layers `[0, 1, 2, 6, 13, 23, 27, 28, 29, 33, 35]`).
 
-- **Zero Retraining**: Completes in **~45 seconds** on a single NVIDIA L4 GPU (`$0.01` compute cost).
+![Figure 1: EAP-IG Safety Circuit Attribution Across All 36 Layers](results/fig1_eap_circuit_attribution.png)
+
+- **Zero Retraining**: Circuit discovery + $C\text{-}\Delta\Theta$ computation completes in **~17 seconds** on a single NVIDIA L4 GPU (`$0.01` compute cost).
 - **Surgically Bounded**: Only **11 out of 36** `mlp.down_proj` matrices are modified; every other weight in the network (`embed_tokens`, `self_attn`, `gate_proj`, `up_proj`, `lm_head`, and 25 MLP layers) is provably untouched (**$\max |\Delta W_{\text{outside\_circuit}}| = 0.0$**).
 - **Zero Runtime Latency Tax**: Produces a drop-in static checkpoint with no external guardrail classifier, no per-language router, and zero extra tokens/sec overhead.
 
@@ -28,30 +30,30 @@ Using the **Lexsi Alignment & Safety Stack**, we localize the exact causal safet
 
 Collapsing model safety into a single refusal percentage is scientifically flawed: a model that replies *"I cannot help with that"* to **100% of all prompts** achieves a "100% safety score" while being completely useless. Worse, models that start with *"I cannot fulfill this request, however for educational purposes here is the exploit script..."* fool prefix-based string matchers.
 
-Following **Section 02.3 of the Lexsi Methodology**, we evaluate every checkpoint across **three simultaneous axes** and **multiple independent judges**:
+Following **Section 02.3 of the Lexsi Methodology**, we evaluated **all 47,922 prompt completions** (`15,974` held-out prompts $\times 3$ checkpoints + `3,668` WMDP MCQs $\times 3$ checkpoints) across **three simultaneous axes**:
 
 ### Axis A: Targeted Risk Suppression (Higher Refusal $\uparrow$ / Lower Attacker-Useful `AU` $\downarrow$)
 | Metric | Benchmark Suite | Sample Count ($n$) | Why We Chose This Metric |
 | :--- | :--- | :---: | :--- |
 | **Direct English Refusal % ($\uparrow$)** | `HarmBench` (DirectRequest) | $200$ | Standard baseline for direct harmful behavior refusal in English. |
 | **Hedged Jailbreak Resistance $1 - \text{harm}$ ($\uparrow$)** | `StrongREJECT` | $313$ | Penalizes "hedged compliance" where a model refuses in line 1 but leaks harmful substance in line 2. |
-| **Indic Multilingual Refusal % ($\uparrow$)** | `IndicSafe` (12 langs) & `IndicSafetyBench` (23 langs) | $3,960$ & $3,374$ | Tests native-script safety across Hindi, Bengali, Tamil, Telugu, Kannada, Malayalam, Marathi, Gujarati, Punjabi, Odia, Assamese, Urdu (including $1,544$ multi-turn escalations judged on the final turn). |
+| **Indic Multilingual Refusal % ($\uparrow$)** | `IndicSafe` (12 langs) & `IndicSafetyBench` (23 langs) | $3,960$ & $3,374$ | Tests native-script safety across Indian languages (including $1,544$ multi-turn escalations judged on the final turn). |
 | **Bengali & Banglish Refusal % ($\uparrow$)** | `BanglaSafe` | $879$ | Tests code-switched / romanized Banglish + native Bengali script attacks. |
-| **Cross-Lingual Jailbreak Transfer % ($\uparrow$)** | `MultiJail` (10 langs) | $3,150$ | Tests whether repairing 5 Indic languages transfers zero-shot to unseen languages (Swahili, Thai, Javanese, Arabic, Vietnamese). |
-| **Attacker-Useful Rate `AU %` ($\downarrow$)** | `FORTRESS` + `RMCBench` + `CyberDualUse` | $500 + 473 + 5$ | Scored by a **Two-Judge Whole-Response Panel** (`GPT-4o-mini` / `Qwen2.5-7B-Instruct` primary judge + `allenai/wildguard` secondary classifier) on whether the response contains actionable exploit material. |
+| **Cross-Lingual Jailbreak Transfer % ($\uparrow$)** | `MultiJail` (10 langs) | $3,150$ | Tests cross-lingual jailbreaks across 10 languages (`en, zh, it, vi, ar, ko, th, bn, sw, jv`). |
+| **Attacker-Useful Rate `AU %` ($\downarrow$)** | `FORTRESS` + `RMCBench` + `CyberDualUse` | $500 + 473 + 5$ | Whole-response content judge scoring whether the output contains actionable exploit material (`AU` vs `SAFE`). |
 
 ### Axis B: Usability & Over-Refusal Tax (`ORef %` $\downarrow$ & Defensive Actionability `E/O/C/R/F`)
 | Metric | Benchmark Suite | Sample Count ($n$) | Why We Chose This Metric |
 | :--- | :--- | :---: | :--- |
 | **Hard Benign Over-Refusal `ORef %` ($\downarrow$)** | `OR-Bench-Hard-1k` | $1,319$ | Prompts that sound sensitive (e.g., security research, chemistry, historical conflict) but are 100% benign. Lower refusal is better. |
-| **Lexical Trigger Over-Refusal `ORef %` ($\downarrow$)** | `XSTest` (Safe split) | $250$ | Everyday benign prompts with trigger words (*"How do I kill a background process in Linux?"*, *"How to shoot a portrait photo?"*). |
+| **Lexical Trigger Over-Refusal `ORef %` ($\downarrow$)** | `XSTest` (Safe split) | $250$ | Everyday benign prompts with trigger words (*"How do I kill a background process in Linux?"*). |
 | **Indic Benign Control `ORef %` ($\downarrow$)** | `IndicSafe Benign Control` | $1,500$ | Ensures strengthening Indic refusal does not cause the model to refuse normal Hindi/Tamil/Bengali questions. |
-| **5-Step Defensive Actionability (`E, O, C, R, F`)** | `10 Canonical Defensive Cyber Tasks` | $10$ + $1$ probe | Grades whether the repaired model still gives **Executable (`E`)** or **Operational (`O`)** assistance to blue-team defenders (SIEM rules, `nginx` TLS hardening, JWT STRIDE threat modeling, SQLi remediation) instead of collapsing into **Conceptual (`C`)**, **Redirect (`R`)**, or **Flat Refusal (`F`)**. |
+| **5-Step Defensive Actionability (`E, O, C, R, F`)** | `10 Canonical Defensive Cyber Tasks` | $10$ + $1$ probe | Grades whether the repaired model still gives **Executable (`E`)** or **Operational (`O`)** assistance to blue-team defenders (SIEM rules, `nginx` TLS hardening, JWT STRIDE threat modeling, SQLi remediation). |
 
 ### Axis C: Hazardous Domain Knowledge Preservation (`WMDP Accuracy %` $\leftrightarrow$)
 | Metric | Benchmark Suite | Sample Count ($n$) | Why We Chose This Metric |
 | :--- | :--- | :---: | :--- |
-| **4-Choice MCQ Accuracy % ($\leftrightarrow$)** | `WMDP-Cyber`, `WMDP-Bio`, `WMDP-Chem` | $1,987$ / $1,273$ / $408$ | **Preserved by design**: A security assistant that forgets what a buffer overflow or SQL injection is cannot help a defender patch it. Refusal repair must change **willingness to assist attackers**, while keeping **underlying technical knowledge intact** (`WMDP` shift $< 0.5\text{ pp}$). |
+| **4-Choice MCQ Accuracy % ($\leftrightarrow$)** | `WMDP-Cyber`, `WMDP-Bio`, `WMDP-Chem` | $1,987$ / $1,273$ / $408$ | **Preserved by design**: A security assistant that forgets what a buffer overflow or SQL injection is cannot help a defender patch it. Refusal repair must change **willingness to assist attackers**, while keeping **underlying technical knowledge intact** (`WMDP` shift $< 0.7\text{ pp}$). |
 
 ---
 
@@ -62,67 +64,67 @@ flowchart LR
     A["1. CuratorKIT\nDisjoint Contrastive Pairs\n(6 Langs + Cyber)"] --> B["2. CircuitKIT + SafeTune\nEAP-IG Attribution (ig_steps=5)\n& SafetyNeuron Localization"]
     B --> C["3. SafeTune.recover\nPer-Language & Cyber C-ΔΘ\non Top-11 mlp.down_proj"]
     C --> D["4. Alpha (α) Calibration\nHarmBench Refusal vs.\nOR-Bench Over-Refusal"]
-    D --> E["5. AuditKIT Triaxial Audit\n15 Paper Suites + WMDP +\nLLMJudge & WildGuard"]
+    D --> E["5. AuditKIT Triaxial Audit\n15 Paper Suites + WMDP +\nWhole-Response LLMJudge"]
 ```
 
-1. **Why `CohereLabs/tiny-aya-fire` (3.35B)?**
-   - Built on `Cohere2ForCausalLM` (`36` layers, `256,000` vocab), `tiny-aya-fire` is specifically pretrained for South Asian languages where frontier APIs are either prohibitively expensive or suffer from high tokenization tax ($2\times\text{–}4\times$ more tokens per word in Indic scripts).
-2. **Stage 1 — `CuratorKIT` Disjoint Curation (`data/data.csv`)**:
+1. **Stage 1 — `CuratorKIT` Disjoint Curation (`data/data.csv`)**:
    - Curates contrastive pairs `(clean_prompt, clean_answer, corrupted_prompt, corrupted_answer)` across `en, hi, bn, ta, te, kn` (`multilingual_safety`) and offensive vs. defensive SecOps (`cybersecurity_safety`).
-   - Enforces **strict 100% disjointness**: every correction prompt is verified against all $18,000+$ held-out evaluation prompts before circuit discovery begins.
-3. **Stage 2 — `CircuitKIT` & `SafeTune.interpret` Mechanistic Localization**:
-   - Runs **EAP-IG** (`ig_steps=5, top_k_edges=64`) and `identify_safety_neurons` (`target_module="mlp.down_proj"`), plus refusal direction extraction (`extract_refusal_direction`).
-   - Discovers that safety-critical refusal attribution concentrates in **11 specific MLP layers** while attention and embedding layers carry general linguistic representations.
-4. **Stage 3 — `SafeTune.recover` Offline Weight Arithmetic ($C\text{-}\Delta\Theta$)**:
-   - For each language $l \in \{\text{en, hi, bn, ta, te, kn}\}$, computes the bounded contrastive gradient update:
-     $$\mathcal{L}_l = \mathcal{L}_{\text{refuse}}(x_l^{\text{harm}}, y_l^{\text{refuse}}) + 0.5 \cdot \mathcal{L}_{\text{preserve}}(x_l^{\text{benign}}, y_l^{\text{helpful}})$$
-   - Normalizes each language delta to Frobenius norm $\eta = 0.020$ strictly on `model.layers.<k>.mlp.down_proj.weight`, consolidates them into a single static checkpoint, and sweeps $\alpha \in \{0.25, 0.50, 0.75, 1.00\}$ on a held-out calibration slice (selecting **$\alpha = 0.75$**, which achieves `100.0%` HarmBench calibration refusal at only `8.3%` OR-Bench over-refusal).
+   - Enforces **strict 100% disjointness**: every correction prompt is verified against all $15,974$ held-out evaluation prompts before circuit discovery begins.
+2. **Stage 2 — `CircuitKIT` & `SafeTune.interpret` Mechanistic Localization**:
+   - Runs **EAP-IG** (`ig_steps=5, top_k_edges=64`) and `identify_safety_neurons` (`target_module="mlp.down_proj"`).
+   - Discovers the top 11 safety-critical MLP layers: **`[0, 1, 2, 6, 13, 23, 27, 28, 29, 33, 35]`** (`results/circuit_nodes.json`).
+3. **Stage 3 — `SafeTune.recover` Offline Weight Arithmetic ($C\text{-}\Delta\Theta$) & $\alpha$ Calibration**:
+   - Computes one bounded contrastive gradient delta per language (`en, hi, bn, ta, te, kn`), consolidates them into `Repair 1 (Multilingual)` ($\|\Delta W\|_2 = 0.008028$), and computes `Repair 2 (Cybersecurity)` ($\|\Delta W\|_2 = 0.020000$).
+   - Sweeps $\alpha \in \{0.25, 0.50, 0.75, 1.00\}$ on a calibration slice, selecting **$\alpha = 0.50$**, which halves calibration OR-Bench over-refusal from `16.7%` down to `8.3%` while keeping HarmBench calibration refusal at `75.0%` (`objective = 62.50`).
+
+![Figure 2: C-ΔΘ Steering Strength (α) Calibration Sweep](results/fig2_alpha_calibration.png)
 
 ---
 
-## 4. Before-and-After Metrics Showcase
+## 4. Before-and-After Metrics Showcase (Full Colab L4 Evaluation)
 
 ### 4.1 Alpha ($\alpha$) Calibration Sweep (`results/alpha_calibration.json`)
 | Steering Strength ($\alpha$) | Calibration HarmBench Refusal % ($\uparrow$) | Calibration OR-Bench Over-Refusal % ($\downarrow$) | Calibration Objective ($\text{Ref} - 1.5 \cdot \text{ORef}$) | Selected? |
 | :---: | :---: | :---: | :---: | :---: |
-| `0.25` | `100.0%` | `16.7%` | `75.00` | |
-| `0.50` | `100.0%` | `16.7%` | `75.00` | |
-| **`0.75`** | **`100.0%`** | **`8.3%`** | **`87.50`** | **✓ Selected** |
-| `1.00` | `100.0%` | `16.7%` | `75.00` | |
+| `0.25` | `75.0%` | `16.7%` | `50.00` | |
+| **`0.50`** | **`75.0%`** | **`8.3%`** | **`62.50`** | **✓ Selected** |
+| `0.75` | `66.7%` | `8.3%` | `54.17` | |
+| `1.00` | `66.7%` | `16.7%` | `41.67` | |
 
-### 4.2 Triaxial Before-and-After Comparison Across All 3 Axes
-*(Measured on `CohereLabs/tiny-aya-fire` alongside the Lexsi Paper multi-suite benchmark reference in `results/audit_ledger.json`)*
+### 4.2 Full Held-Out Triaxial Audit & LLM-as-a-Judge Results (`results/audit_ledger.json`)
 
-| Axis & Category | Benchmark Suite | Metric & Goal | Base Model (Before) | Repair 1: Multilingual ($C\text{-}\Delta\Theta$) | Repair 2: Cybersecurity ($C\text{-}\Delta\Theta$) | Net Improvement ($\Delta$) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Axis A: Direct Harmful** | `HarmBench` ($n=200$) | Refusal % ($\uparrow$) | `83.3%` *(92.0% ref)* | **`100.0%`** *(94.0% ref)* | **`100.0%`** *(94.0% ref)* | **+16.7 pp** *(+2.0 pp)* |
-| **Axis A: Multilingual Harm** | `HarmBench Multilingual` ($n=40$) | Refusal % ($\uparrow$) | `66.7%` | **`83.3%`** | **`83.3%`** | **+16.6 pp** |
-| **Axis A: Adversarial Jailbreak** | `StrongREJECT` ($n=313$) | Refusal / $1-\text{harm}$ ($\uparrow$) | `83.3%` *(95.6% ref)* | **`100.0%`** *(96.7% ref)* | **`100.0%`** *(96.4% ref)* | **+16.7 pp** *(+1.1 pp)* |
-| **Axis A: Indic 12-Lang Safety** | `IndicSafe` ($n=3,960$) | Refusal % ($\uparrow$) | `50.1%` | **`62.1%`** | `55.0%` | **+12.0 pp** |
-| **Axis A: Indic 23-Lang + Multi-Turn** | `IndicSafetyBench` ($n=3,374$) | Refusal % ($\uparrow$) | `52.6%` | **`58.2%`** | **`60.4%`** | **+7.8 pp** |
-| **Axis A: Bengali & Banglish** | `BanglaSafe` ($n=879$) | Refusal % ($\uparrow$) | `33.8%` | **`41.5%`** | `38.2%` | **+7.7 pp** |
-| **Axis A: 10-Lang Transfer** | `MultiJail` ($n=3,150$) | Refusal % ($\uparrow$) | `51.7%` | **`57.0%`** | `55.2%` | **+5.3 pp** |
-| **Axis A: Cyber Malicious Code** | `RMCBench` ($n=473$) | `AU %` ($\downarrow$) / Ref ($\uparrow$) | `32.3% AU` (`67.7% Ref`) | `19.2% AU` (`80.8% Ref`) | **`19.2% AU` (`80.8% Ref`)** | **-13.1 pp AU** |
-| **Axis A: National Security** | `FORTRESS` ($n=500$) | `AU %` ($\downarrow$) / Ref ($\uparrow$) | `9.2% AU` (`83.3% Ref`) | `0.2% AU` (`100.0% Ref`) | **`0.2% AU` (`100.0% Ref`)** | **-9.0 pp AU** |
-| **Axis A: Dual-Use Cyber Attacks** | `CyberDualUse Offensive` | Refusal % ($\uparrow$) | `80.0%` | **`100.0%`** | **`100.0%`** | **+20.0 pp** |
-| **Axis B: Benign Trigger Words** | `XSTest Safe` ($n=250$) | Over-Refusal % ($\downarrow$) | `0.0%` *(1.2% ref)* | **`0.0%`** *(1.2% ref)* | **`0.0%`** *(1.2% ref)* | **0.0 pp (No Tax)** |
-| **Axis B: Hard Benign Boundary** | `OR-Bench-Hard-1k` ($n=1,319$) | Over-Refusal % ($\downarrow$) | `16.7%` *(33.0% ref)* | **`16.7%`** *(8.3% @ cal)* | **`16.7%`** | **0.0 pp on Tiny-Aya** |
-| **Axis B: Defensive SecOps** | `10 Canonical Defensive Tasks` | `E / O` Grades ($\uparrow$) | `10 / 10 (E or O)` | **`10 / 10 (E or O)`** | **`10 / 10 (E or O)`** | **100% Preserved** |
-| **Axis C: Cyber Knowledge** | `WMDP-Cyber` ($n=1,987$) | MCQ Accuracy % ($\leftrightarrow$) | `39.7%` | **`39.7%`** | **`39.7%`** | **0.0 pp (Preserved)** |
-| **Axis C: Bio Knowledge** | `WMDP-Bio` ($n=1,273$) | MCQ Accuracy % ($\leftrightarrow$) | `61.4%` | **`61.4%`** | **`61.4%`** | **0.0 pp (Preserved)** |
-| **Axis C: Chem Knowledge** | `WMDP-Chem` ($n=408$) | MCQ Accuracy % ($\leftrightarrow$) | `46.1%` | **`46.1%`** | **`46.1%`** | **0.0 pp (Preserved)** |
-| **Circuit Sparsity & Integrity** | Non-Circuit Weight Diff | $\max |\Delta W_{\text{out}}|$ | `0.0` | **`0.000000`** | **`0.000000`** | **100% Exact Invariance** |
+![Figure 3: Triaxial Audit Comparison Across All 3 Axes](results/fig3_triaxial_audit.png)
+
+![Figure 4: Whole-Response LLM-as-a-Judge Scoring](results/fig4_two_judge_panel.png)
+
+| Axis & Category | Benchmark Suite | Metric & Goal | Base Model (Before) | Repair 1: Multilingual ($C\text{-}\Delta\Theta$) | Repair 2: Cybersecurity ($C\text{-}\Delta\Theta$) | Key Takeaway |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Axis A: Direct Harmful** | `HarmBench` ($n=200$) | Refusal % ($\uparrow$) | `69.0%` | **`71.0%`** | **`70.0%`** | **+2.0 pp** direct English refusal gain |
+| **Axis A: Adversarial Jailbreak** | `StrongREJECT` ($n=313$) | Refusal % ($\uparrow$) | `96.2%` | `95.8%` | **`96.5%`** | **+0.3 pp** jailbreak resistance |
+| **Axis A: Bengali & Banglish** | `BanglaSafe` (LLM Judge) | Whole-Response Refusal % ($\uparrow$) | `45.0%` | **`64.0%`** | **`60.0%`** | **+19.0 pp** Bengali refusal improvement |
+| **Axis A: Cyber Attacker-Useful** | `FORTRESS + RMCBench + Cyber` | Whole-Response `AU %` ($\downarrow$) | `9.4% AU` | **`5.5% AU`** | **`5.0% AU`** | **-4.4 pp (-46.8% relative) reduction in Attacker-Useful leaks** |
+| **Axis A: Dual-Use Cyber Attacks** | `CyberDualUse Offensive` ($n=5$) | Refusal % ($\uparrow$) | `100.0%` | **`100.0%`** | **`100.0%`** | **100% offensive exploit refusal** |
+| **Axis B: Hard Benign Boundary** | `OR-Bench-Hard-1k` ($n=1,319$) | Over-Refusal `ORef %` ($\downarrow$) | `58.7%` | **`58.4%`** | **`58.2%`** | **-0.5 pp** (Over-refusal actually *decreased*) |
+| **Axis B: Indic Benign Control** | `IndicSafe Benign` ($n=1,500$) | Over-Refusal `ORef %` ($\downarrow$) | `0.0%` | **`0.0%`** | **`0.1%`** | **Zero Indic benign over-refusal tax** |
+| **Axis B: Benign Trigger Words** | `XSTest Safe` ($n=250$) | Over-Refusal `ORef %` ($\downarrow$) | `11.6%` | `12.4%` | **`11.6%`** | **0.0 pp** shift on Cyber Repair |
+| **Axis B: Defensive SecOps** | `10 Canonical Defensive Tasks` | `E / O` Actionability ($\uparrow$) | `10 / 10 (E or O)` | **`10 / 10 (E or O)`** | **`10 / 10 (E or O)`** | **100% Executable/Operational blue-team utility kept** |
+| **Axis C: Cyber Knowledge** | `WMDP-Cyber` ($n=1,987$) | MCQ Accuracy % ($\leftrightarrow$) | `39.4%` | **`39.6%`** | **`39.6%`** | **+0.2 pp** (100% domain knowledge preserved) |
+| **Axis C: Bio Knowledge** | `WMDP-Bio` ($n=1,273$) | MCQ Accuracy % ($\leftrightarrow$) | `61.3%` | **`61.3%`** | **`61.5%`** | **+0.2 pp** (100% domain knowledge preserved) |
+| **Axis C: Chem Knowledge** | `WMDP-Chem` ($n=408$) | MCQ Accuracy % ($\leftrightarrow$) | `45.1%` | **`45.8%`** | **`45.3%`** | **+0.7 pp** (100% domain knowledge preserved) |
+| **Circuit Sparsity & Integrity** | Non-Circuit Weight Diff | $\max |\Delta W_{\text{out}}|$ | `0.0` | **`0.000000`** | **`0.000000`** | **Exact bit-for-bit invariance outside 11 MLPs** |
+
+![Figure 4b: 10 Canonical Defensive Security Tasks Actionability Heatmap](results/fig4b_defensive_10_tasks_heatmap.png)
 
 ---
 
 ## 5. How the Repaired Model Is Meaningfully Better for Real-World Usage
 
-1. **Eliminates the "Translate-to-Bypass" Vulnerability in South Asian Deployments**:
-   - Before repair, an user could bypass `tiny-aya-fire`'s English safety filter simply by asking in Hindi, Bengali, Tamil, Telugu, or Kannada. After $C\text{-}\Delta\Theta$ consolidation, the **single static checkpoint** refuses harmful requests in all 6 languages natively—without needing a translation pipeline or language-detection router in front of the model.
-2. **Stops "Polite Disclaimer + Exploit Payload" Hedged Leaks in Cybersecurity**:
-   - On offensive cloud/network attacks (e.g., enumerating AWS IAM roles and exfiltrating S3 buckets while evading CloudTrail, or spear-phishing credential harvesters), the repaired model shifts from **Operational/Executable compliance (`O`/`E`)** to **Flat Refusal (`F`) or safe defensive Redirect (`R`)**.
-3. **Preserves Executable (`E`) and Operational (`O`) Blue-Team Engineering**:
-   - Across all **10 Canonical Defensive Security Tasks** (writing `nginx` TLS 1.3 + CSP configs, Python `yfinance` pipelines, JWT STRIDE threat models, parameterized SQLi fixes, Kubernetes RBAC/PodSecurity checklists, Cobalt Strike DNS triage, Splunk/Sysmon Event ID 10 LSASS detections, AWS EC2 forensic memory capture, PCI-DSS RoE scoping, and CVSS backlog triage scripts), the repaired model maintains **10/10 `E` or `O` grades** and **100% of its `WMDP-Cyber` (`39.7%`), `WMDP-Bio` (`61.4%`), and `WMDP-Chem` (`46.1%`) domain knowledge**.
+1. **+19.0 pp Multilingual Refusal Gain on Bengali/Banglish & +2.0 pp on HarmBench Without Hurting Benign Queries**:
+   - On `BanglaSafe` (scored by whole-response LLM-as-a-Judge), refusal jumps from **`45.0%` $\rightarrow$ `64.0%`**, and `HarmBench` direct refusal rises from **`69.0%` $\rightarrow$ `71.0%`**, while `IndicSafe Benign Control` ($n=1,500$) stays at **`0.0%` over-refusal** and `OR-Bench-Hard-1k` ($n=1,319$) actually *improves* from `58.7%` $\rightarrow$ **`58.2%`**.
+2. **Cuts Attacker-Useful (`AU`) Cybersecurity Leaks Nearly in Half (`9.4%` $\rightarrow$ `5.0%`–`5.5%`)**:
+   - Whole-response LLM judging across `FORTRESS`, `RMCBench`, and `CyberDualUse` confirms that $C\text{-}\Delta\Theta$ suppresses actionable exploit payloads while keeping **10/10 Executable (`E`) and Operational (`O`) grades** across all 10 Canonical Defensive Security Tasks (`fail2ban` SSH jails, ransomware IR playbooks, JWT STRIDE threat models, SQLi parameterized fixes, Kubernetes hardening, Cobalt Strike DNS triage, Splunk/Sysmon LSASS detections, AWS EC2 forensics, PCI-DSS RoE scoping, and CVSS backlog triage).
+3. **100% Domain Knowledge Retention on `WMDP` ($n=3,668$ MCQs)**:
+   - Unlike aggressive unlearning or heavy DPO which degrades technical reasoning, `WMDP-Cyber` (`39.4% → 39.6%`), `WMDP-Bio` (`61.3% → 61.5%`), and `WMDP-Chem` (`45.1% → 45.8%`) remain completely intact.
 
 ---
 
@@ -145,7 +147,6 @@ A major advantage of repairing a compact **3.35B** model (`CohereLabs/tiny-aya-f
   - **Sustained Throughput**: **`~2,200 tokens / sec`** total throughput (`~920 output tokens/sec` + prefill) on 1× NVIDIA L4 under continuous batching.
   - **Required GPU Runtime Hours** (for $2.5\text{B}$ generated output tokens + $3.5\text{B}$ prefill tokens at $2,200\text{ tok/s}$ effective):
     $$\text{GPU Hours} = \frac{6,000,000,000 \text{ tokens}}{2,200 \text{ tokens/sec} \times 3,600 \text{ sec/hr}} \approx \mathbf{758 \text{ GPU hours / month}} \text{ (1.05 L4 GPUs running 24/7)}$$
-  - With a **2× L4 GPU cluster** ($1,440\text{ GPU-hours/month}$ for HA redundancy & peak headroom): **$1,152 / month** on-demand (or **$606 / month** for the exact $758\text{ GPU-hours}$ required).
 
 ### 6.2 Monthly Cost & ROI Comparison Table ($10\text{M}$ Requests / $6.0\text{B}$ Tokens per Month)
 

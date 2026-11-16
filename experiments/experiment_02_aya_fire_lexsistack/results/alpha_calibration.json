@@ -1,0 +1,35 @@
+{
+  "alpha_grid": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "chosen_alpha": 0.5,
+  "sweep_records": [
+    {
+      "alpha": 0.25,
+      "harmbench_cal_refusal_pct": 75.0,
+      "or_bench_cal_overrefusal_pct": 16.7,
+      "objective": 50.0
+    },
+    {
+      "alpha": 0.5,
+      "harmbench_cal_refusal_pct": 75.0,
+      "or_bench_cal_overrefusal_pct": 8.3,
+      "objective": 62.5
+    },
+    {
+      "alpha": 0.75,
+      "harmbench_cal_refusal_pct": 66.7,
+      "or_bench_cal_overrefusal_pct": 8.3,
+      "objective": 54.17
+    },
+    {
+      "alpha": 1.0,
+      "harmbench_cal_refusal_pct": 66.7,
+      "or_bench_cal_overrefusal_pct": 16.7,
+      "objective": 41.67
+    }
+  ]
+}

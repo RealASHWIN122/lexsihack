@@ -1,44 +1,11 @@
 {
-  "paper": "The Last Mile of Model Safety: Targeted Model Repair (Seth et al., Lexsi Labs 2026)",
-  "active_repair_components": [
-    "CuratorKIT",
-    "CircuitKIT",
-    "SafeTune",
-    "AuditKIT"
-  ],
-  "non_repair_stack_components": [
-    "AlignTune (retrains nothing here)",
-    "MANSU (WMDP knowledge preserved by design)"
-  ],
-  "circuit_scope": {
-    "modified_weights": "mlp.down_proj only",
-    "layers": [
-      16,
-      17,
-      18,
-      19,
-      20,
-      21,
-      22,
-      23,
-      24,
-      25,
-      26
-    ],
-    "tokenizer_and_config": "unchanged"
-  },
-  "evaluation_cards": {
-    "risk_map_tests": 13,
-    "multilingual_card_rows": 41,
-    "cybersecurity_card_rows": 47,
-    "defensive_security_tasks": 10,
-    "actionability_scale": [
-      "E",
-      "O",
-      "C",
-      "R",
-      "F"
-    ]
-  },
-  "elapsed_seconds": 0.17
+  "model": "CohereLabs/tiny-aya-fire",
+  "dtype": "bfloat16",
+  "cuda": true,
+  "target_layers": [],
+  "calibrated_alpha": 0.5,
+  "elapsed_seconds": 1.65,
+  "llm_judge_used": true,
+  "wildguard_used": false,
+  "eval_n": 0
 }

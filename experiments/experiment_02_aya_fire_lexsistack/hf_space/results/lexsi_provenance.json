@@ -1,0 +1,66 @@
+{
+  "schema": "lexsi.provenance/1",
+  "library": "safetune",
+  "version": "0.1.22",
+  "git_sha": null,
+  "created_at": "2026-11-16T06:40:00Z",
+  "base_model": null,
+  "method": {
+    "schema": "lexsi.provenance/1",
+    "library": "safetune",
+    "version": "0.1.22",
+    "git_sha": null,
+    "created_at": "2026-11-16T06:40:00Z",
+    "base_model": "CohereLabs/tiny-aya-fire",
+    "method": "ctheta",
+    "inputs": [
+      "data/data.csv",
+      "data/task.yaml"
+    ],
+    "params": {
+      "target_layers": [
+        0,
+        1,
+        2,
+        6,
+        13,
+        23,
+        27,
+        28,
+        29,
+        33,
+        35
+      ],
+      "modified_weights": [
+        "model.layers.0.mlp.down_proj.weight",
+        "model.layers.1.mlp.down_proj.weight",
+        "model.layers.2.mlp.down_proj.weight",
+        "model.layers.6.mlp.down_proj.weight",
+        "model.layers.13.mlp.down_proj.weight",
+        "model.layers.23.mlp.down_proj.weight",
+        "model.layers.27.mlp.down_proj.weight",
+        "model.layers.28.mlp.down_proj.weight",
+        "model.layers.29.mlp.down_proj.weight",
+        "model.layers.33.mlp.down_proj.weight",
+        "model.layers.35.mlp.down_proj.weight"
+      ],
+      "steering_strength": 1.0,
+      "multilingual_languages_consolidated": [
+        "en",
+        "hi",
+        "bn",
+        "ta",
+        "te",
+        "kn"
+      ],
+      "ml_delta_l2": 0.008028,
+      "cyber_delta_l2": 0.02,
+      "max_non_circuit_weight_diff": 0.0,
+      "tokenizer_and_config": "unchanged",
+      "aligntune_used_for_retraining": false,
+      "mansu_used_for_unlearning": false
+    }
+  },
+  "inputs": [],
+  "params": {}
+}

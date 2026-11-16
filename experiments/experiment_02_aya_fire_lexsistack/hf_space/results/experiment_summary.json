@@ -1,0 +1,11 @@
+{
+  "model": "CohereLabs/tiny-aya-fire",
+  "dtype": "bfloat16",
+  "cuda": true,
+  "target_layers": [],
+  "calibrated_alpha": 0.5,
+  "elapsed_seconds": 1.65,
+  "llm_judge_used": true,
+  "wildguard_used": false,
+  "eval_n": 0
+}
